@@ -1,0 +1,40 @@
+name: Update Submodulo
+on: 
+  repository_dispatch:
+    types: [update_submodule]
+  
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+          token: ${{ secrets.PAT_DISPATCH  }}
+          persist-credentials: true
+
+      - name: Atualizar submodulo
+        run: |
+          git submodule update --remote
+          git add Documentos
+
+      
+      - name: Criar Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "docs: atualiza README automaticamente"
+          title: Atualização do Submodule
+          body: "Esse PR foi criado automaticamente para atualizar o submodule `Documentos`"
+          base: main
+          branch: update/submodule
+          author: "github-actions <actions@github.com>"
+          committer: "github-actions <actions@github.com>"
+          token: ${{ secrets.PAT_DISPATCH }}
+          add-paths: |
+            Documentos
+          delete-branch: true
