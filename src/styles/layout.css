@@ -5,10 +5,12 @@
   min-height: 0;
   position: relative;
 }
+
 .app-content {
   flex: 1;
   display: flex;
   min-height: 0;
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .col {
@@ -17,12 +19,22 @@
   display: flex;
   flex-direction: column;
 }
+
 .list-col {
-  width: 258px;
+  width: 280px;
+  min-width: 200px;
+  flex-shrink: 0;
   border-right: 1px solid var(--border);
   background: var(--panel);
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.app-shell.sidebar-collapsed .list-col {
+  width: 320px;
+}
+
 .detail-col {
   flex: 1;
   background: var(--bg);
+  min-width: 0;
 }

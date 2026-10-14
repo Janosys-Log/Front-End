@@ -1,35 +1,103 @@
 import type { VeiculoDTO } from "../services/importacao.service";
 import type { Driver, DriverStatus } from "../types/driver";
-import { useMemo, useState } from "react";
-import z from "zod";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TODAY } from "../constants/app";
+import { STATUS_ORDER } from "../constants/status";
 import { seedDrivers } from "../services/drivers.service";
 import { veiculosParaDrivers } from "../services/importacao.service";
 
-// Alterar para puxar serverUrl do .env
-const serverUrl = "http://localhost:8080";
+const MOTORISTA_URL = "http://localhost:8080";
+const AVALIACAO_URL = "http://localhost:8082";
 
-// eslint-disable-next-line unused-imports/no-unused-vars
-const avaliacaoSchema = z.object({
-  motoristaId: z.number().positive(),
-  nota: z.number().min(1).max(5),
-  feedback: z.string(),
-});
+type Avaliacao = {
+  motoristaId: number;
+  nota: number;
+  feedback: string;
+};
 
-type Avaliacao = z.infer<typeof avaliacaoSchema>;
+type MotoristaApi = {
+  idMotorista: number;
+  nomeMotorista: string;
+  cpfMotorista?: string;
+  contatoMotorista?: string;
+  status?: string;
+  ultimoManifesto?: string | null;
+  veiculoId?: number;
+  notaMedia?: number;
+};
 
-// Estado e regras da lista de motoristas: seleção com "lock", status e avaliação
+function mapStatus(s?: string): DriverStatus {
+  if (!s) return "disponivel";
+  const n = s.toLowerCase().replace("-", "_");
+  if (n === "disponivel" || n === "em_rota" || n === "indisponivel" || n === "indesejado") {
+    return n as DriverStatus;
+  }
+  if (n.includes("rota")) return "em_rota";
+  if (n.includes("indesej")) return "indesejado";
+  if (n.includes("indispon")) return "indisponivel";
+  return "disponivel";
+}
+
+function mapMotorista(m: MotoristaApi): Driver {
+  return {
+    id: String(m.idMotorista),
+    nome: m.nomeMotorista,
+    veiculo: m.veiculoId ? `Veículo #${m.veiculoId}` : "—",
+    placa: "",
+    telefone: m.contatoMotorista || "",
+    manifestoData: m.ultimoManifesto || TODAY,
+    status: mapStatus(m.status),
+    lockedBy: null,
+    avaliacoes: [],
+  };
+}
+
 export function useDrivers(userName: string) {
-  const [drivers, setDrivers] = useState<Driver[]>(seedDrivers);
+  const [drivers, setDrivers] = useState<Driver[]>(() => seedDrivers());
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [avaliacao, setAvaliacao] = useState<Avaliacao>({ motoristaId: 0, nota: 1, feedback: "" });
+  const [avaliacao, setAvaliacao] = useState<Avaliacao>({ motoristaId: 0, nota: 5, feedback: "" });
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
-  // fila por manifesto: mais antigo primeiro
-  const sortedDrivers = useMemo(
-    () => [...drivers].sort((a, b) => new Date(a.manifestoData).getTime() - new Date(b.manifestoData).getTime()),
-    [drivers],
-  );
+  const loadFromApi = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${MOTORISTA_URL}/api/motoristas`);
+      if (!res.ok) throw new Error("API motoristas indisponível");
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setDrivers(data.map(mapMotorista));
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFromApi();
+  }, [loadFromApi]);
+
+  const sortedDrivers = useMemo(() => {
+    return [...drivers].sort((a, b) => {
+      const orderA = STATUS_ORDER.indexOf(a.status);
+      const orderB = STATUS_ORDER.indexOf(b.status);
+      if (orderA !== orderB) return orderA - orderB;
+
+      const hasManifestA = !!a.manifestoData;
+      const hasManifestB = !!b.manifestoData;
+      if (!hasManifestA && hasManifestB) return -1;
+      if (hasManifestA && !hasManifestB) return 1;
+      if (hasManifestA && hasManifestB) {
+        const timeA = new Date(a.manifestoData).getTime();
+        const timeB = new Date(b.manifestoData).getTime();
+        if (timeA !== timeB) return timeA - timeB;
+      }
+
+      return a.nome.localeCompare(b.nome, "pt-BR");
+    });
+  }, [drivers]);
+
   const selected = drivers.find(d => d.id === selectedId) ?? null;
 
   function select(id: string) {
@@ -52,33 +120,55 @@ export function useDrivers(userName: string) {
     setDrivers(ds => ds.map(d => d.id === id ? { ...d, status } : d));
   }
 
-  async function sendAvaliacao() {
-    if (avaliacao.motoristaId >= 0 || avaliacao.feedback === "") {
-      setError("Dados Inválidos");
-      return;
-    }
-
-    const responseAvaliacao = await fetch(`${serverUrl}/api/avaliacoes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(avaliacao),
-    });
-
-    if (!responseAvaliacao.ok) {
-      setError("Erro na requisição");
-      throw new Error(await responseAvaliacao.json());
-    }
-
-    concludeRoute();
+  function concludeRoute(motoristaId: number, nota: number, feedback: string) {
+    setDrivers(ds => ds.map(d => d.id === String(motoristaId)
+      ? {
+          ...d,
+          status: "disponivel" as DriverStatus,
+          avaliacoes: [{ nota, obs: feedback, data: TODAY, operador: userName }, ...d.avaliacoes],
+        }
+      : d));
   }
 
-  // registra a avaliação e libera o motorista como disponível
-  function concludeRoute() {
-    setDrivers(ds => ds.map(d => d.id === String(avaliacao.motoristaId)
-      ? { ...d, status: "disponivel", avaliacoes: [{ nota: avaliacao.nota, obs: avaliacao.feedback, data: TODAY, operador: userName }, ...d.avaliacoes] }
-      : d));
+  async function sendAvaliacao(): Promise<boolean> {
+    setError("");
+    if (!avaliacao.motoristaId || avaliacao.motoristaId <= 0) {
+      setError("Motorista inválido");
+      return false;
+    }
+    if (!avaliacao.feedback.trim()) {
+      setError("Feedback obrigatório");
+      return false;
+    }
+    if (avaliacao.nota < 1 || avaliacao.nota > 5) {
+      setError("Nota deve ser de 1 a 5");
+      return false;
+    }
+
+    try {
+      const responseAvaliacao = await fetch(`${AVALIACAO_URL}/api/avaliacoes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          motoristaId: avaliacao.motoristaId,
+          nota: avaliacao.nota,
+          feedback: avaliacao.feedback,
+        }),
+      });
+
+      if (!responseAvaliacao.ok) {
+        const body = await responseAvaliacao.text();
+        setError(`Erro na avaliação (${responseAvaliacao.status}): ${body}`);
+        return false;
+      }
+
+      concludeRoute(avaliacao.motoristaId, avaliacao.nota, avaliacao.feedback);
+      setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+      return true;
+    } catch (e) {
+      setError("Não foi possível conectar ao serviço de avaliação. Verifique se está rodando.");
+      return false;
+    }
   }
 
   function reset() {
@@ -91,5 +181,22 @@ export function useDrivers(userName: string) {
     setSelectedId(null);
   }
 
-  return { drivers, sortedDrivers, selected, selectedId, select, closeDetail, changeStatus, concludeRoute, reset, importar, avaliacao, setAvaliacao, sendAvaliacao, error };
+  return {
+    drivers,
+    sortedDrivers,
+    selected,
+    selectedId,
+    select,
+    closeDetail,
+    changeStatus,
+    concludeRoute,
+    reset,
+    importar,
+    avaliacao,
+    setAvaliacao,
+    sendAvaliacao,
+    error,
+    loading,
+    reload: loadFromApi,
+  };
 }

@@ -61,7 +61,7 @@ export function veiculosParaDrivers(veiculos: VeiculoDTO[]): Driver[] {
     placa: v.placa,
     telefone: "",
     manifestoData: TODAY,
-    status: v.status === "Ativo" ? "disponivel" : "outros",
+    status: v.status === "Ativo" ? "disponivel" : "indisponivel",
     lockedBy: null,
     avaliacoes: [],
   }));
