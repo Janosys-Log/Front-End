@@ -16,7 +16,7 @@ type Props = {
 };
 
 export default function PainelPage({ theme, onToggleTheme }: Props) {
-  const { session, setSession, setIsAuthenticated } = useUsuario();
+  const { session, logout } = useUsuario();
   const { drivers, sortedDrivers, selected, selectedId, select, closeDetail, changeStatus, reset, importar } = useDrivers(session.userName);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -24,11 +24,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
-
-  function logout() {
-    setSession({ userName: "", role: "operador" });
-    setIsAuthenticated(false);
-  }
 
   return (
     <>

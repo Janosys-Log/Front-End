@@ -7,6 +7,7 @@ export type UserContextProps = {
   setSession: Dispatch<SetStateAction<Session>>;
   isAuthenticated: boolean;
   setIsAuthenticated: Dispatch<SetStateAction<boolean>>;
+  logout: () => void;
 };
 
 export const UserContext = createContext<UserContextProps | null>(null);
