@@ -1,5 +1,6 @@
 name: Update Submodulo
 on: 
+  workflow_dispatch:
   repository_dispatch:
     types: [update_submodule]
   
@@ -25,16 +26,38 @@ jobs:
 
       
       - name: Criar Pull Request
+        id: pr_backend
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "docs: atualiza README automaticamente"
           title: Atualização do Submodule
           body: "Esse PR foi criado automaticamente para atualizar o submodule `Documentos`"
-          base: main
+          base: staged
           branch: update/submodule
+          delete-branch: true
+          add-paths: |
+            Documentos
           author: "github-actions <actions@github.com>"
           committer: "github-actions <actions@github.com>"
           token: ${{ secrets.PAT_DISPATCH }}
-          add-paths: |
-            Documentos
-          delete-branch: true
+
+      - name: Aprove Pull Request
+        if: |
+          steps.pr_backend.outputs.pull-request-operation == 'created' ||
+          steps.pr_backend.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ secrets.PAT_APROVE }}
+          PR_NUMBER: ${{ steps.pr_backend.outputs.pull-request-number }}
+        run: |
+          gh pr comment "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --body "🤖 Submódulo Documentos atualizado automaticamente. Aguardando merge."
+
+      - name: Automerge Pull Request
+        if: steps.pr_backend.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v3.0.0
+        with:
+          token: ${{ secrets.PAT_APROVE }}
+          repository: Janosys-Log/Back-End
+          pull-request-number: ${{ steps.pr_backend.outputs.pull-request-number }}
+          merge-method: squash
