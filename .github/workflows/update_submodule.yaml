@@ -15,6 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          ref: "staged"
           submodules: true
           token: ${{ secrets.PAT_DISPATCH  }}
           persist-credentials: true
@@ -26,7 +27,7 @@ jobs:
 
       
       - name: Criar Pull Request
-        id: pr_backend
+        id: pr_frontend
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "docs: atualiza README automaticamente"
@@ -43,21 +44,21 @@ jobs:
 
       - name: Aprove Pull Request
         if: |
-          steps.pr_backend.outputs.pull-request-operation == 'created' ||
-          steps.pr_backend.outputs.pull-request-operation == 'updated'
+          steps.pr_frontend.outputs.pull-request-operation == 'created' ||
+          steps.pr_frontend.outputs.pull-request-operation == 'updated'
         env:
           GH_TOKEN: ${{ secrets.PAT_APROVE }}
-          PR_NUMBER: ${{ steps.pr_backend.outputs.pull-request-number }}
+          PR_NUMBER: ${{ steps.pr_frontend.outputs.pull-request-number }}
         run: |
-          gh pr comment "$PR_NUMBER" \
+          gh pr review "$PR_NUMBER" \
             --repo "${{ github.repository }}" \
-            --body "🤖 Submódulo Documentos atualizado automaticamente. Aguardando merge."
+            --approve
 
       - name: Automerge Pull Request
-        if: steps.pr_backend.outputs.pull-request-number != ''
+        if: steps.pr_frontend.outputs.pull-request-number != ''
         uses: peter-evans/enable-pull-request-automerge@v3.0.0
         with:
-          token: ${{ secrets.PAT_APROVE }}
-          repository: Janosys-Log/Back-End
-          pull-request-number: ${{ steps.pr_backend.outputs.pull-request-number }}
+          token: ${{ secrets.PAT_DISPATCH }}
+          repository: Janosys-Log/Front-End
+          pull-request-number: ${{ steps.pr_frontend.outputs.pull-request-number }}
           merge-method: squash
