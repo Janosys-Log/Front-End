@@ -9,6 +9,7 @@ import Sidebar from "../components/layout/Sidebar";
 import EvalModal from "../components/modals/EvalModal";
 import ImportModal from "../components/modals/ImportModal";
 import { useDrivers } from "../hooks/useDrivers";
+import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
 
 type Props = {
@@ -41,6 +42,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [importOpen, setImportOpen] = useState(false);
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { width: listWidth, resizing, containerRef, handleProps } = useResizableWidth();
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
 
@@ -66,8 +68,8 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           }}
           onImport={() => setImportOpen(true)}
         />
-        <div className="app-content">
-          <div className="col list-col">
+        <div ref={containerRef} className={`app-content${resizing ? " resizing" : ""}`}>
+          <div className="col list-col" style={{ width: listWidth }}>
             <ListToolbar
               query={query}
               setQuery={setQuery}
@@ -89,6 +91,15 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
               typeFilter={typeFilter}
             />
           </div>
+          <div
+            className="resize-handle"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Redimensionar lista de motoristas"
+            tabIndex={0}
+            title="Arraste para redimensionar (duplo clique para restaurar)"
+            {...handleProps}
+          />
           <div className="col detail-col">
             <DriverDetail
               driver={selected}
@@ -104,7 +115,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         <ImportModal
           onClose={() => setImportOpen(false)}
           onImport={(res) => {
-            importar(res);
+            importar(res.veiculosValidos);
             setImportOpen(false);
           }}
         />

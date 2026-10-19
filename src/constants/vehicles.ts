@@ -49,3 +49,31 @@ export const TIPOS_POR_CATEGORIA: Record<CategoriaVeiculo, { value: TipoVeiculo;
 };
 
 export const TODOS_TIPOS: TipoVeiculo[] = Object.values(TIPOS_POR_CATEGORIA).flatMap(t => t.map(x => x.value));
+
+export const TIPO_LABEL: Record<string, string> = Object.fromEntries(
+  Object.values(TIPOS_POR_CATEGORIA).flat().map(t => [t.value, t.label]),
+);
+
+export function normalizarTipo(valor?: string): TipoVeiculo | undefined {
+  if (!valor)
+    return undefined;
+  const n = valor
+    .trim()
+    .toUpperCase()
+    .replace("3/4", "TRES_QUARTOS")
+    .replace(/[\s-]+/g, "_")
+    .replace("BI_TRUCK", "BITRUCK")
+    .replace("Ç", "C")
+    .replace("Ã", "A")
+    .replace("Õ", "O")
+    .replace("Á", "A");
+  return (TODOS_TIPOS as string[]).includes(n) ? (n as TipoVeiculo) : undefined;
+}
+
+export function categoriaDoTipo(tipo?: string): CategoriaVeiculo | undefined {
+  const t = normalizarTipo(tipo);
+  if (!t)
+    return undefined;
+  return (Object.keys(TIPOS_POR_CATEGORIA) as CategoriaVeiculo[])
+    .find(cat => TIPOS_POR_CATEGORIA[cat].some(x => x.value === t));
+}

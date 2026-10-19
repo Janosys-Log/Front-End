@@ -2,12 +2,13 @@ import type { VeiculoDTO } from "../services/importacao.service";
 import type { Driver, DriverStatus } from "../types/driver";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TODAY } from "../constants/app";
+import { TIPO_LABEL } from "../constants/vehicles";
 import { STATUS_ORDER } from "../constants/status";
-import { seedDrivers } from "../services/drivers.service";
 import { veiculosParaDrivers } from "../services/importacao.service";
 
 const MOTORISTA_URL = "http://localhost:8080";
 const AVALIACAO_URL = "http://localhost:8082";
+const VEICULO_URL = "http://localhost:8081";
 
 type Avaliacao = {
   motoristaId: number;
@@ -26,6 +27,20 @@ type MotoristaApi = {
   notaMedia?: number;
 };
 
+type VeiculoApi = {
+  idVeiculo: number;
+  placaVeiculo: string;
+  tipoVeiculo?: string;
+  categoria?: string;
+};
+
+const STATUS_API: Record<DriverStatus, string> = {
+  disponivel: "Disponivel",
+  em_rota: "Em_Rota",
+  indisponivel: "Indisponivel",
+  indesejado: "Indesejado",
+};
+
 function mapStatus(s?: string): DriverStatus {
   if (!s) return "disponivel";
   const n = s.toLowerCase().replace("-", "_");
@@ -38,12 +53,16 @@ function mapStatus(s?: string): DriverStatus {
   return "disponivel";
 }
 
-function mapMotorista(m: MotoristaApi): Driver {
+function mapMotorista(m: MotoristaApi, v?: VeiculoApi): Driver {
   return {
     id: String(m.idMotorista),
     nome: m.nomeMotorista,
-    veiculo: m.veiculoId ? `Veículo #${m.veiculoId}` : "—",
-    placa: "",
+    veiculo: v?.tipoVeiculo
+      ? (TIPO_LABEL[v.tipoVeiculo] ?? v.tipoVeiculo)
+      : m.veiculoId ? `Veículo #${m.veiculoId}` : "—",
+    placa: v?.placaVeiculo ?? "",
+    categoria: v?.categoria,
+    tipoVeiculo: v?.tipoVeiculo,
     telefone: m.contatoMotorista || "",
     manifestoData: m.ultimoManifesto || TODAY,
     status: mapStatus(m.status),
@@ -53,22 +72,40 @@ function mapMotorista(m: MotoristaApi): Driver {
 }
 
 export function useDrivers(userName: string) {
-  const [drivers, setDrivers] = useState<Driver[]>(() => seedDrivers());
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [avaliacao, setAvaliacao] = useState<Avaliacao>({ motoristaId: 0, nota: 5, feedback: "" });
   const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadFromApi = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${MOTORISTA_URL}/api/motoristas`);
-      if (!res.ok) throw new Error("API motoristas indisponível");
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setDrivers(data.map(mapMotorista));
+      const [resMot, resVei] = await Promise.all([
+        fetch(`${MOTORISTA_URL}/api/motoristas`),
+        // Se o serviço de veículo estiver fora, a lista de motoristas ainda carrega.
+        fetch(`${VEICULO_URL}/api/veiculos`).catch(() => null),
+      ]);
+      if (!resMot.ok) throw new Error("API motoristas indisponível");
+      const data: unknown = await resMot.json();
+      if (!Array.isArray(data)) {
+        throw new Error("A API de motoristas retornou um formato inesperado.");
       }
-    } catch {
+
+      let veiculos: VeiculoApi[] = [];
+      if (resVei?.ok) {
+        const v: unknown = await resVei.json();
+        if (Array.isArray(v)) veiculos = v as VeiculoApi[];
+      }
+      const porId = new Map(veiculos.map(v => [v.idVeiculo, v]));
+
+      // A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
+      setDrivers((data as MotoristaApi[]).map(m =>
+        mapMotorista(m, m.veiculoId ? porId.get(m.veiculoId) : undefined),
+      ));
+    } catch (e) {
+      setDrivers([]);
+      console.error("Falha ao carregar motoristas da API:", e);
     } finally {
       setLoading(false);
     }
@@ -116,8 +153,36 @@ export function useDrivers(userName: string) {
     setSelectedId(null);
   }
 
-  function changeStatus(id: string, status: DriverStatus) {
+  // Grava o status no banco. Retorna true se deu certo.
+  async function salvarStatus(id: string, status: DriverStatus): Promise<boolean> {
+    // Motoristas vindos da importação (ids "imp-...") ainda não existem no banco.
+    if (!/^\d+$/.test(id)) return true;
+
+    try {
+      const res = await fetch(`${MOTORISTA_URL}/api/status/updateStatus`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motoristaId: Number(id), status: STATUS_API[status] }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return true;
+    } catch (e) {
+      console.error("Falha ao atualizar status:", e);
+      return false;
+    }
+  }
+
+  async function changeStatus(id: string, status: DriverStatus) {
+    const anterior = drivers.find(d => d.id === id)?.status;
     setDrivers(ds => ds.map(d => d.id === id ? { ...d, status } : d));
+
+    const ok = await salvarStatus(id, status);
+    if (!ok) {
+      if (anterior) {
+        setDrivers(ds => ds.map(d => d.id === id ? { ...d, status: anterior } : d));
+      }
+      window.alert("Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.");
+    }
   }
 
   function concludeRoute(motoristaId: number, nota: number, feedback: string) {
@@ -162,6 +227,15 @@ export function useDrivers(userName: string) {
         return false;
       }
 
+      // Concluir a rota também volta o motorista para "Disponível" no banco.
+      const statusOk = await salvarStatus(String(avaliacao.motoristaId), "disponivel");
+      if (!statusOk) {
+        window.alert("A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.");
+        setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+        void loadFromApi();
+        return true;
+      }
+
       concludeRoute(avaliacao.motoristaId, avaliacao.nota, avaliacao.feedback);
       setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
       return true;
@@ -172,8 +246,8 @@ export function useDrivers(userName: string) {
   }
 
   function reset() {
-    setDrivers(seedDrivers());
     setSelectedId(null);
+    void loadFromApi();
   }
 
   function importar(veiculos: VeiculoDTO[]) {

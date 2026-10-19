@@ -4,7 +4,7 @@ import { Calendar, Lock, Truck } from "lucide-react";
 import { formatDate } from "../../utils/date";
 import StatusPill from "../common/StatusPill";
 import { STATUS, STATUS_ORDER } from "../../constants/status";
-import { TIPOS_POR_CATEGORIA } from "../../constants/vehicles";
+import { CATEGORIAS, categoriaDoTipo, normalizarTipo } from "../../constants/vehicles";
 
 type Props = {
   drivers: Driver[];
@@ -27,32 +27,16 @@ export default function DriverList({
 }: Props) {
   const q = query.toLowerCase();
 
-  const tiposDaCategoria =
-    categoryFilter !== "all"
-      ? TIPOS_POR_CATEGORIA[categoryFilter].map(t => t.value)
-      : null;
-
   const filtered = drivers.filter((d) => {
     const matchStatus = statusFilter === "all" || d.status === statusFilter;
     const matchQuery =
       d.nome.toLowerCase().includes(q)
       || d.veiculo.toLowerCase().includes(q)
       || (d.placa && d.placa.toLowerCase().includes(q));
-    const matchTipo =
-      typeFilter === "all"
-        ? true
-        : (d.tipoVeiculo || d.veiculo || "").toUpperCase().includes(typeFilter)
-          || (d.veiculo || "").toUpperCase().includes(typeFilter.replace("_", " "));
-    const matchCategoria =
-      categoryFilter === "all"
-        ? true
-        : tiposDaCategoria
-          ? tiposDaCategoria.some(
-              t =>
-                (d.tipoVeiculo || d.veiculo || "").toUpperCase().includes(t)
-                || (d.veiculo || "").toUpperCase().includes(t.replace("_", " ")),
-            )
-          : true;
+    const tipo = d.tipoVeiculo ?? normalizarTipo(d.veiculo);
+    const categoria = d.categoria ?? categoriaDoTipo(tipo);
+    const matchTipo = typeFilter === "all" || tipo === typeFilter;
+    const matchCategoria = categoryFilter === "all" || categoria === categoryFilter;
     return matchStatus && matchQuery && matchTipo && matchCategoria;
   });
 
@@ -93,6 +77,7 @@ export default function DriverList({
                     <Truck size={12} />
                     {" "}
                     {d.veiculo}
+                    {d.categoria && `\n · ${CATEGORIAS[d.categoria as CategoriaVeiculo] ?? d.categoria}`}
                   </span>
                 </div>
                 <div className="driver-row-side">

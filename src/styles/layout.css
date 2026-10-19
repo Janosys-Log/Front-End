@@ -21,7 +21,7 @@
 }
 
 .list-col {
-  width: 280px;
+  width: 320px;
   min-width: 200px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
@@ -29,12 +29,46 @@
   transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.app-shell.sidebar-collapsed .list-col {
-  width: 320px;
-}
-
 .detail-col {
   flex: 1;
   background: var(--bg);
   min-width: 0;
+}
+
+/* Divisória arrastável entre a lista e o detalhe */
+.resize-handle {
+  position: relative;
+  flex-shrink: 0;
+  width: 6px;
+  margin: 0 -3px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+.resize-handle:hover::after,
+.resize-handle:focus-visible::after,
+.app-content.resizing .resize-handle::after {
+  background: var(--accent);
+}
+.resize-handle:focus-visible {
+  outline: none;
+}
+
+/* Durante o arraste: sem animação de largura e sem selecionar texto */
+.app-content.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+.app-content.resizing .list-col {
+  transition: none;
 }
