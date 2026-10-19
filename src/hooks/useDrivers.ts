@@ -6,9 +6,8 @@ import { TIPO_LABEL } from "../constants/vehicles";
 import { STATUS_ORDER } from "../constants/status";
 import { veiculosParaDrivers } from "../services/importacao.service";
 
-const MOTORISTA_URL = "http://localhost:8080";
+const MOTORISTA_URL = "http://localhost:8083";
 const AVALIACAO_URL = "http://localhost:8082";
-const VEICULO_URL = "http://localhost:8081";
 
 type Avaliacao = {
   motoristaId: number;
@@ -16,22 +15,30 @@ type Avaliacao = {
   feedback: string;
 };
 
+// Veiculo.java -> vem aninhado dentro de Motorista
+type VeiculoApi = {
+  idVeiculo: number;
+  placaVeiculo: string;
+  tipoVeiculo?: string;    // enum TipoVeiculo, ex: URBANOS_EXPRESS
+  subtipoVeiculo?: string; // enum SubtipoVeiculo, ex: VAN
+};
+
+// Motorista.java
 type MotoristaApi = {
   idMotorista: number;
   nomeMotorista: string;
   cpfMotorista?: string;
   contatoMotorista?: string;
   status?: string;
-  ultimoManifesto?: string | null;
-  veiculoId?: number;
   notaMedia?: number;
+  veiculo?: VeiculoApi | null;
 };
 
-type VeiculoApi = {
-  idVeiculo: number;
-  placaVeiculo: string;
-  tipoVeiculo?: string;
-  categoria?: string;
+// Manifesto.java (só o que interessa)
+type ManifestoApi = {
+  idManifesto: number;
+  dataManifesto?: string | number[] | null;
+  motorista?: { idMotorista: number } | null;
 };
 
 const STATUS_API: Record<DriverStatus, string> = {
@@ -53,18 +60,72 @@ function mapStatus(s?: string): DriverStatus {
   return "disponivel";
 }
 
-function mapMotorista(m: MotoristaApi, v?: VeiculoApi): Driver {
+// LocalDate pode vir como "2026-10-12" ou como [2026, 10, 12], dependendo da config do Jackson.
+function normalizarData(d?: string | number[] | null): string {
+  if (!d) return "";
+  if (Array.isArray(d)) {
+    const [y, m, day] = d;
+    return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return d.slice(0, 10);
+}
+
+// motoristaId -> data do manifesto mais recente (yyyy-MM-dd)
+function ultimoManifestoPorMotorista(manifestos: ManifestoApi[]): Map<number, string> {
+  const mapa = new Map<number, string>();
+  for (const mf of manifestos) {
+    const id = mf.motorista?.idMotorista;
+    const data = normalizarData(mf.dataManifesto);
+    if (id == null || !data) continue;
+    const atual = mapa.get(id);
+    if (!atual || data > atual) mapa.set(id, data);
+  }
+  return mapa;
+}
+
+// Nomes amigáveis dos enums SubtipoVeiculo / TipoVeiculo (usado quando TIPO_LABEL não tem a chave).
+const SUBTIPO_LABEL: Record<string, string> = {
+  MOTOCICLETAS: "Motocicletas",
+  AUTOMOVEIS: "Automóveis",
+  FIORINO: "Fiorino",
+  VAN: "Van",
+  VUC: "VUC",
+  TRES_QUARTOS: "3/4",
+  TOCO: "Toco",
+  TRUCK: "Truck",
+  BI_TRUCK: "Bi-truck",
+  CAVALO_MECANICO: "Cavalo Mecânico",
+  CAVALO_MECANICO_TRUCADO: "Cavalo Mecânico Trucado",
+  SEMI_REBOQUE_2_EIXOS: "Semi-reboque 2 eixos",
+  SEMI_REBOQUE_3_EIXOS: "Semi-reboque 3 eixos",
+  SEMI_REBOQUE_4_EIXOS: "Semi-reboque 4 eixos",
+};
+
+function humanizarEnum(k: string): string {
+  const t = k.toLowerCase().replace(/_/g, " ");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function rotuloVeiculo(k: string): string {
+  return TIPO_LABEL[k] ?? SUBTIPO_LABEL[k] ?? humanizarEnum(k);
+}
+
+function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
+  const v = m.veiculo ?? undefined;
   return {
     id: String(m.idMotorista),
     nome: m.nomeMotorista,
-    veiculo: v?.tipoVeiculo
-      ? (TIPO_LABEL[v.tipoVeiculo] ?? v.tipoVeiculo)
-      : m.veiculoId ? `Veículo #${m.veiculoId}` : "—",
+    veiculo: v?.subtipoVeiculo
+      ? rotuloVeiculo(v.subtipoVeiculo)
+      : v?.tipoVeiculo
+        ? rotuloVeiculo(v.tipoVeiculo)
+        : "—",
     placa: v?.placaVeiculo ?? "",
-    categoria: v?.categoria,
-    tipoVeiculo: v?.tipoVeiculo,
+    categoria: v?.tipoVeiculo,
+    tipoVeiculo: v?.subtipoVeiculo,
     telefone: m.contatoMotorista || "",
-    manifestoData: m.ultimoManifesto || TODAY,
+    // Sem manifesto = string vazia (o sort já trata como "sem manifesto" e coloca na frente).
+    manifestoData: ultimoManifesto ?? "",
     status: mapStatus(m.status),
     lockedBy: null,
     avaliacoes: [],
@@ -81,10 +142,10 @@ export function useDrivers(userName: string) {
   const loadFromApi = useCallback(async () => {
     setLoading(true);
     try {
-      const [resMot, resVei] = await Promise.all([
+      const [resMot, resMan] = await Promise.all([
         fetch(`${MOTORISTA_URL}/api/motoristas`),
-        // Se o serviço de veículo estiver fora, a lista de motoristas ainda carrega.
-        fetch(`${VEICULO_URL}/api/veiculos`).catch(() => null),
+        // Se manifestos falhar, a lista de motoristas ainda carrega.
+        fetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
       ]);
       if (!resMot.ok) throw new Error("API motoristas indisponível");
       const data: unknown = await resMot.json();
@@ -92,16 +153,16 @@ export function useDrivers(userName: string) {
         throw new Error("A API de motoristas retornou um formato inesperado.");
       }
 
-      let veiculos: VeiculoApi[] = [];
-      if (resVei?.ok) {
-        const v: unknown = await resVei.json();
-        if (Array.isArray(v)) veiculos = v as VeiculoApi[];
+      let manifestos: ManifestoApi[] = [];
+      if (resMan?.ok) {
+        const mf: unknown = await resMan.json();
+        if (Array.isArray(mf)) manifestos = mf as ManifestoApi[];
       }
-      const porId = new Map(veiculos.map(v => [v.idVeiculo, v]));
+      const ultimoPorMotorista = ultimoManifestoPorMotorista(manifestos);
 
       // A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
       setDrivers((data as MotoristaApi[]).map(m =>
-        mapMotorista(m, m.veiculoId ? porId.get(m.veiculoId) : undefined),
+        mapMotorista(m, ultimoPorMotorista.get(m.idMotorista)),
       ));
     } catch (e) {
       setDrivers([]);
@@ -156,7 +217,10 @@ export function useDrivers(userName: string) {
   // Grava o status no banco. Retorna true se deu certo.
   async function salvarStatus(id: string, status: DriverStatus): Promise<boolean> {
     // Motoristas vindos da importação (ids "imp-...") ainda não existem no banco.
-    if (!/^\d+$/.test(id)) return true;
+    if (!/^\d+$/.test(id)) {
+      console.log("[salvarStatus] id não numérico, não grava no banco:", id);
+      return true;
+    }
 
     try {
       const res = await fetch(`${MOTORISTA_URL}/api/status/updateStatus`, {
@@ -164,6 +228,7 @@ export function useDrivers(userName: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ motoristaId: Number(id), status: STATUS_API[status] }),
       });
+      console.log("[salvarStatus] resposta", res.status);
       if (!res.ok) throw new Error(await res.text());
       return true;
     } catch (e) {
@@ -174,6 +239,9 @@ export function useDrivers(userName: string) {
 
   async function changeStatus(id: string, status: DriverStatus) {
     const anterior = drivers.find(d => d.id === id)?.status;
+    console.log("[changeStatus] chamado", { id, de: anterior, para: status });
+    // O backend recusa (400) quando o status novo é igual ao atual de quem está Disponível.
+    if (anterior === status) return;
     setDrivers(ds => ds.map(d => d.id === id ? { ...d, status } : d));
 
     const ok = await salvarStatus(id, status);
@@ -228,7 +296,10 @@ export function useDrivers(userName: string) {
       }
 
       // Concluir a rota também volta o motorista para "Disponível" no banco.
-      const statusOk = await salvarStatus(String(avaliacao.motoristaId), "disponivel");
+      const atual = drivers.find(d => d.id === String(avaliacao.motoristaId))?.status;
+      const statusOk = atual === "disponivel"
+        ? true
+        : await salvarStatus(String(avaliacao.motoristaId), "disponivel");
       if (!statusOk) {
         window.alert("A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.");
         setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
