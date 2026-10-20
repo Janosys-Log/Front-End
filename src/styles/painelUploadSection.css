@@ -1,0 +1,26 @@
+/* PainelPage > UploadSection */
+.painel-upload-section {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  padding: 24px;
+}
+
+.painel-upload-section__seta {
+  align-self: center;
+  font-size: 1.25rem;
+  color: #b4b9c1;
+}
+
+@media (max-width: 760px) {
+  .painel-upload-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .painel-upload-section__seta {
+    transform: rotate(90deg);
+  }
+}
