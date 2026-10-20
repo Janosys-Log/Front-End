@@ -1,9 +1,15 @@
 const MOTORISTA_URL = "http://localhost:8083";
 
+// Chave onde o auth.service.ts guarda o token no localStorage.
+// Confira com: grep -n "localStorage" src/services/auth.service.ts
+
+// manifestoService.ts e importacao.service.ts
+import { apiFetch } from "./apiFetch";
+
 // GET /api/manifestos/dataDoUltimoManifesto  ->  { data: "2026-10-19" }
 export async function buscarDataUltimaImportacao(): Promise<Date | null> {
   try {
-    const res = await fetch(`${MOTORISTA_URL}/api/manifestos/dataDoUltimoManifesto`);
+    const res = await apiFetch(`${MOTORISTA_URL}/api/manifestos/dataDoUltimoManifesto`);
     if (!res.ok) return null;
     const { data } = await res.json();
     if (!data) return null;
