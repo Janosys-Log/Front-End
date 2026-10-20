@@ -1,5 +1,6 @@
 import type { Driver } from "../types/driver";
 import { TODAY } from "../constants/app";
+import { categoriaDoTipo, normalizarTipo } from "../constants/vehicles";
 
 export type VeiculoDTO = {
   placa: string;
@@ -58,10 +59,12 @@ export function veiculosParaDrivers(veiculos: VeiculoDTO[]): Driver[] {
     id: `imp-${v.placa || i}`,
     nome: v.motorista,
     veiculo: v.tipoVeiculo,
+    tipoVeiculo: normalizarTipo(v.tipoVeiculo),
+    categoria: categoriaDoTipo(v.tipoVeiculo),
     placa: v.placa,
     telefone: "",
     manifestoData: TODAY,
-    status: v.status === "Ativo" ? "disponivel" : "outros",
+    status: v.status === "Ativo" ? "disponivel" : "indisponivel",
     lockedBy: null,
     avaliacoes: [],
   }));

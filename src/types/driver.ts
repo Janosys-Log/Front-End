@@ -1,4 +1,4 @@
-export type DriverStatus = "disponivel" | "em_rota" | "outros" | "indesejado";
+export type DriverStatus = "disponivel" | "em_rota" | "indisponivel" | "indesejado";
 export type StatusFilter = DriverStatus | "all";
 
 export type Evaluation = {
@@ -14,8 +14,10 @@ export type Driver = {
   veiculo: string;
   placa: string;
   telefone: string;
-  manifestoData: string; // ISO yyyy-mm-dd
+  manifestoData: string;
   status: DriverStatus;
   lockedBy: string | null;
   avaliacoes: Evaluation[];
+  categoria?: string;
+  tipoVeiculo?: string;
 };
