@@ -78,13 +78,14 @@ export default function EvalModal({
             ))}
           </select>
         </label>
-        <label>
+        <label className="modal-score">
           Número do manifesto:
           <input
             required
             type="number"
+            min="1"
             placeholder="Digite o número do manifesto"
-            className="ml-2"
+            className="w-fit ml-2"
             value={avaliacao.numeroManifesto}
             onChange={e =>
               setAvaliacao(prev => ({
