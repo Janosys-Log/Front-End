@@ -1,4 +1,4 @@
-import type { Theme } from "../types/app";
+import type { Theme, View } from "../types/app";
 import type { StatusFilter } from "../types/driver";
 import { useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
@@ -9,6 +9,7 @@ import EvalModal from "../components/modals/EvalModal";
 import ImportModal from "../components/modals/ImportModal";
 import { useDrivers } from "../hooks/useDrivers";
 import useUsuario from "../hooks/useUsuario";
+import UsuariosPage from "./UsuariosPage";
 
 type Props = {
   theme: Theme;
@@ -22,6 +23,10 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [importOpen, setImportOpen] = useState(false);
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
+  const [viewEscolhida, setViewEscolhida] = useState<View>("painel");
+
+  // Operacional nunca vê a tela de usuários, mesmo se o estado for alterado
+  const view: View = session.role === "gerente" ? viewEscolhida : "painel";
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
 
@@ -32,26 +37,36 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           role={session.role}
           userName={session.userName}
           theme={theme}
+          view={view}
+          onNavigate={setViewEscolhida}
           onToggleTheme={onToggleTheme}
           onLogout={logout}
           onReset={reset}
           onImport={() => setImportOpen(true)}
         />
-        <div className="app-content">
-          <div className="col list-col">
-            <ListToolbar query={query} setQuery={setQuery} statusFilter={statusFilter} setStatusFilter={setStatusFilter} count={sortedDrivers.length} />
-            <DriverList drivers={sortedDrivers} selectedId={selectedId} onSelect={select} query={query} statusFilter={statusFilter} />
-          </div>
-          <div className="col detail-col">
-            <DriverDetail
-              driver={selected}
-              role={session.role}
-              onChangeStatus={changeStatus}
-              onOpenEvalModal={setEvalDriverId}
-              onClose={selected ? closeDetail : null}
-            />
-          </div>
-        </div>
+        {view === "usuarios"
+          ? (
+              <div className="app-content">
+                <UsuariosPage />
+              </div>
+            )
+          : (
+              <div className="app-content">
+                <div className="col list-col">
+                  <ListToolbar query={query} setQuery={setQuery} statusFilter={statusFilter} setStatusFilter={setStatusFilter} count={sortedDrivers.length} />
+                  <DriverList drivers={sortedDrivers} selectedId={selectedId} onSelect={select} query={query} statusFilter={statusFilter} />
+                </div>
+                <div className="col detail-col">
+                  <DriverDetail
+                    driver={selected}
+                    role={session.role}
+                    onChangeStatus={changeStatus}
+                    onOpenEvalModal={setEvalDriverId}
+                    onClose={selected ? closeDetail : null}
+                  />
+                </div>
+              </div>
+            )}
       </div>
       {importOpen && (
         <ImportModal
