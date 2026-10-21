@@ -6,6 +6,9 @@ import type {
 } from "../types/importacao";
 import { TODAY } from "../constants/app";
 import { categoriaDoTipo, normalizarTipo } from "../constants/vehicles";
+import { apiFetch } from "./apiFetch";
+
+const CSV_URL = "http://localhost:8080/csv";
 
 export type VeiculoDTO = {
   placa: string;
@@ -85,15 +88,18 @@ export function validarArquivos(
   veiculos: File | null,
   manifestos: File | null,
 ): string | null {
-  if (!veiculos && !manifestos) return "Faltam os dois arquivos: o CSV de veículos e o CSV de manifestos.";
-  if (!veiculos) return "Falta o CSV de veículos.";
-  if (!manifestos) return "Falta o CSV de manifestos.";
+  if (!veiculos && !manifestos)
+    return "Faltam os dois arquivos: o CSV de veículos e o CSV de manifestos.";
+  if (!veiculos)
+    return "Falta o CSV de veículos.";
+  if (!manifestos)
+    return "Falta o CSV de manifestos.";
   return null;
 }
 
 /**
  * Envia os dois CSVs numa única requisição.
- * Os nomes dos campos ("veiculos" e "manifestos") precisam bater com os
+ * Os nomes dos campos ("csvVeiculo" e "csvManifesto") precisam bater com os
  * @RequestParam / @RequestPart do controller.
  * Resposta esperada do back:
  * { veiculos: { validos, invalidos }, manifestos: { validos, invalidos } }
@@ -106,7 +112,11 @@ export async function importarCsvs(
   formData.append("csvVeiculo", veiculos);
   formData.append("csvManifesto", manifestos);
 
-  const response = await fetch("/csv/veiculo", { method: "POST", body: formData });
+  const response = await apiFetch(CSV_URL, { method: "POST", body: formData });
+
+  if (response.status === 401) {
+    throw new Error("Sessão expirada. Faça login novamente.");
+  }
 
   if (!response.ok) {
     throw new Error(
