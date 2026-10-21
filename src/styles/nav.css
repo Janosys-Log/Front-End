@@ -1,13 +1,80 @@
-/* Barra lateral */
 .sidenav {
   width: 210px;
+  flex-shrink: 0;
   background: var(--panel);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
   gap: 18px;
+  overflow: hidden;
+  transition:
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
 }
+
+.sidenav.collapsed {
+  width: 56px;
+  padding: 16px 8px;
+}
+
+.sidenav.collapsed .brand-mini span,
+.sidenav.collapsed .nav-items button span,
+.sidenav.collapsed .nav-items button .chev,
+.sidenav.collapsed .sidenav-footer > span,
+.sidenav.collapsed .sidenav-footer .role-tag,
+.sidenav.collapsed .btn-ghost span {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sidenav.collapsed .nav-items button {
+  justify-content: center;
+  padding: 9px;
+}
+
+.sidenav.collapsed .btn-ghost.small {
+  justify-content: center;
+  padding: 8px;
+}
+
+.sidenav.collapsed .brand-mini {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidenav-toggle {
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s, transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+
+.sidenav-toggle:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.sidenav.collapsed .sidenav-toggle {
+  align-self: center;
+  transform: rotate(180deg);
+}
+
 .brand-mini {
   display: flex;
   align-items: center;
@@ -16,12 +83,20 @@
   font-size: 13px;
   font-weight: 600;
   padding: 0 4px;
+  transition: gap 0.2s;
 }
+
+.brand-mini span {
+  transition: opacity 0.2s ease, width 0.2s ease;
+  white-space: nowrap;
+}
+
 .nav-items {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
+
 .nav-items button,
 .nav-tabs button {
   font-family: inherit;
@@ -36,19 +111,31 @@
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.15s, color 0.15s, padding 0.2s;
 }
+
+.nav-items button span,
+.nav-items button .chev {
+  transition: opacity 0.2s ease;
+}
+
 .nav-items button .chev {
   margin-left: auto;
   opacity: 0;
 }
+
 .nav-items button.active {
   background: var(--panel-2);
   color: var(--text);
 }
+
 .nav-items button.active .chev {
   opacity: 1;
   color: var(--accent);
 }
+
 .sidenav-footer {
   margin-top: auto;
   display: flex;
@@ -58,7 +145,15 @@
   color: var(--muted);
   border-top: 1px solid var(--border);
   padding-top: 12px;
+  overflow: hidden;
 }
+
+.sidenav-footer > span,
+.sidenav-footer .role-tag {
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+
 .role-tag {
   display: inline-block;
   width: fit-content;
@@ -66,4 +161,9 @@
   padding: 2px 8px;
   border-radius: 20px;
   font-size: 10.5px;
+}
+
+.btn-ghost span {
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
 }

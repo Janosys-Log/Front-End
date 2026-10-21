@@ -1,6 +1,5 @@
 import type { ResultadoImportacao } from "../../services/importacao.service";
 import { useRef, useState } from "react";
-import { importarCsv } from "../../services/importacao.service";
 import Modal from "../common/Modal";
 
 type EstadoImportacao = "selecao" | "enviando" | "sucesso" | "parcial" | "erro";

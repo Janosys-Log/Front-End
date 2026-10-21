@@ -18,7 +18,8 @@ export type LoginResponse = {
 export type StoredSession = LoginResponse;
 
 const STORAGE_KEY = "fleetops_auth_session";
-const API_URL = import.meta.env.VITE_AUTH_API_URL || "http://localhost:8082/api/auth";
+
+const API_URL = import.meta.env.VITE_AUTH_API_URL || "http://localhost:8081/api/auth";
 
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   let response: Response;

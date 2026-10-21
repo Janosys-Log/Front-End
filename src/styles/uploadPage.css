@@ -1,0 +1,39 @@
+
+.upload-page {
+  --upload-page-bg: #f4f6fb;
+  --upload-page-titulo: #13267a;
+  --upload-page-texto: #4d5a8f;
+
+  min-height: 100%;
+  padding: 40px 24px;
+  background: var(--upload-page-bg);
+}
+
+.upload-page__cabecalho {
+  max-width: 920px;
+  margin: 0 auto 8px;
+  padding: 0 24px;
+}
+
+.upload-page__titulo {
+  margin: 0 0 6px;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--upload-page-titulo);
+}
+
+.upload-page__descricao {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--upload-page-texto);
+}
+
+@media (max-width: 760px) {
+  .upload-page {
+    padding: 24px 12px;
+  }
+
+  .upload-page__cabecalho {
+    padding: 0 12px;
+  }
+}

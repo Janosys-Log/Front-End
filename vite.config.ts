@@ -10,9 +10,5 @@ export default defineConfig({
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
-  server: {
-    proxy: {
-      "/arquivo": "http://localhost:8080",
-    },
-  },
+ 
 });
