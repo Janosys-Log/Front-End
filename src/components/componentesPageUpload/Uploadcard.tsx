@@ -26,9 +26,7 @@ function formatarData(valor?: string | Date | null) {
   if (!valor) return '—';
   const d = new Date(valor);
   if (Number.isNaN(d.getTime())) return '—';
-  const data = d.toLocaleDateString('pt-BR');
-  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  return `${data} - ${hora}`;
+  return d.toLocaleDateString('pt-BR');
 }
 
 export function UploadCard({

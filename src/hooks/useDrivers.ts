@@ -5,9 +5,17 @@ import { TODAY } from "../constants/app";
 import { TIPO_LABEL } from "../constants/vehicles";
 import { STATUS_ORDER } from "../constants/status";
 import { veiculosParaDrivers } from "../services/importacao.service";
+import { apiFetch } from "../services/apiFetch";
+
+// manifestoService.ts e importacao.service.ts
 
 const MOTORISTA_URL = "http://localhost:8083";
 const AVALIACAO_URL = "http://localhost:8082";
+
+// Chave onde o auth.service.ts guarda o token no localStorage.
+// Confira com: grep -n "localStorage" src/services/auth.service.ts
+// useDrivers.ts
+
 
 type Avaliacao = {
   motoristaId: number;
@@ -143,10 +151,11 @@ export function useDrivers(userName: string) {
     setLoading(true);
     try {
       const [resMot, resMan] = await Promise.all([
-        fetch(`${MOTORISTA_URL}/api/motoristas`),
+        apiFetch(`${MOTORISTA_URL}/api/motoristas`),
         // Se manifestos falhar, a lista de motoristas ainda carrega.
-        fetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
+        apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
       ]);
+      if (resMot.status === 401) throw new Error("Sessão expirada. Faça login novamente.");
       if (!resMot.ok) throw new Error("API motoristas indisponível");
       const data: unknown = await resMot.json();
       if (!Array.isArray(data)) {
@@ -223,7 +232,7 @@ export function useDrivers(userName: string) {
     }
 
     try {
-      const res = await fetch(`${MOTORISTA_URL}/api/status/updateStatus`, {
+      const res = await apiFetch(`${MOTORISTA_URL}/api/status/updateStatus`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ motoristaId: Number(id), status: STATUS_API[status] }),
@@ -279,7 +288,7 @@ export function useDrivers(userName: string) {
     }
 
     try {
-      const responseAvaliacao = await fetch(`${AVALIACAO_URL}/api/avaliacoes`, {
+      const responseAvaliacao = await apiFetch(`${AVALIACAO_URL}/api/avaliacoes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -288,6 +297,11 @@ export function useDrivers(userName: string) {
           feedback: avaliacao.feedback,
         }),
       });
+
+      if (responseAvaliacao.status === 401) {
+        setError("Sessão expirada. Faça login novamente.");
+        return false;
+      }
 
       if (!responseAvaliacao.ok) {
         const body = await responseAvaliacao.text();

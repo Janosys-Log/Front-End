@@ -15,7 +15,7 @@ export default function App() {
   const { isAuthenticated } = useUsuario();
 
   return (
-   /* <Shell theme={theme}>
+    <Shell theme={theme}>
       {isAuthenticated
         ? (
            <PainelPage
@@ -27,7 +27,7 @@ export default function App() {
         : (
             <LoginPage theme={theme} />
           )}
-    </Shell>*/
-     <UploadPage/>
+    </Shell>
+      /*<UploadPage/> */
   );
 }

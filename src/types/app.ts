@@ -4,4 +4,7 @@ export type Theme = "dark" | "light";
 export type Session = {
   role: Role;
   userName: string;
+  token?: string;
+  email?: string;
+  idUsuario?: number;
 };
