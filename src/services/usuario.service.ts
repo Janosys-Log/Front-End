@@ -1,7 +1,7 @@
 import type { Usuario, UsuarioPayload } from "../types/usuario";
 import { criarAuthHeaders } from "./auth.service";
 
-const API_URL = import.meta.env.VITE_USUARIOS_API_URL || "http://localhost:8082/api/usuarios";
+const API_URL = import.meta.env.VITE_USUARIOS_API_URL || "http://localhost:8081/api/usuarios";
 
 export class ApiError extends Error {
   status: number;
