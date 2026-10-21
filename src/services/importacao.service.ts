@@ -41,10 +41,15 @@ export async function importarCsv(arquivo: File): Promise<ResultadoImportacao> {
   const formData = new FormData();
   formData.append("arquivo", arquivo);
 
-  const response = await fetch("/arquivo", { method: "POST", body: formData });
+  const response = await fetch("http://localhost:8080/csv", {
+    method: "POST",
+    body: formData,
+  });
 
   if (!response.ok) {
-    throw new Error(`Falha na importação (HTTP ${response.status}). Verifique se o arquivo é um .csv válido em UTF-8.`);
+    throw new Error(
+      `Falha na importação (HTTP ${response.status}). Verifique se o arquivo é um .csv válido em UTF-8.`,
+    );
   }
 
   const data = await response.json();

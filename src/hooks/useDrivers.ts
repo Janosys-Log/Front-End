@@ -1,9 +1,11 @@
+/* eslint-disable no-alert */
+
 import type { VeiculoDTO } from "../services/importacao.service";
 import type { Driver, DriverStatus } from "../types/driver";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TODAY } from "../constants/app";
-import { TIPO_LABEL } from "../constants/vehicles";
 import { STATUS_ORDER } from "../constants/status";
+import { TIPO_LABEL } from "../constants/vehicles";
 import { veiculosParaDrivers } from "../services/importacao.service";
 
 const MOTORISTA_URL = "http://localhost:8083";
@@ -12,6 +14,7 @@ const AVALIACAO_URL = "http://localhost:8082";
 type Avaliacao = {
   motoristaId: number;
   nota: number;
+  numeroManifesto: number;
   feedback: string;
 };
 
@@ -19,7 +22,7 @@ type Avaliacao = {
 type VeiculoApi = {
   idVeiculo: number;
   placaVeiculo: string;
-  tipoVeiculo?: string;    // enum TipoVeiculo, ex: URBANOS_EXPRESS
+  tipoVeiculo?: string; // enum TipoVeiculo, ex: URBANOS_EXPRESS
   subtipoVeiculo?: string; // enum SubtipoVeiculo, ex: VAN
 };
 
@@ -49,20 +52,30 @@ const STATUS_API: Record<DriverStatus, string> = {
 };
 
 function mapStatus(s?: string): DriverStatus {
-  if (!s) return "disponivel";
+  if (!s)
+    return "disponivel";
   const n = s.toLowerCase().replace("-", "_");
-  if (n === "disponivel" || n === "em_rota" || n === "indisponivel" || n === "indesejado") {
+  if (
+    n === "disponivel"
+    || n === "em_rota"
+    || n === "indisponivel"
+    || n === "indesejado"
+  ) {
     return n as DriverStatus;
   }
-  if (n.includes("rota")) return "em_rota";
-  if (n.includes("indesej")) return "indesejado";
-  if (n.includes("indispon")) return "indisponivel";
+  if (n.includes("rota"))
+    return "em_rota";
+  if (n.includes("indesej"))
+    return "indesejado";
+  if (n.includes("indispon"))
+    return "indisponivel";
   return "disponivel";
 }
 
 // LocalDate pode vir como "2026-10-12" ou como [2026, 10, 12], dependendo da config do Jackson.
 function normalizarData(d?: string | number[] | null): string {
-  if (!d) return "";
+  if (!d)
+    return "";
   if (Array.isArray(d)) {
     const [y, m, day] = d;
     return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -71,14 +84,18 @@ function normalizarData(d?: string | number[] | null): string {
 }
 
 // motoristaId -> data do manifesto mais recente (yyyy-MM-dd)
-function ultimoManifestoPorMotorista(manifestos: ManifestoApi[]): Map<number, string> {
+function ultimoManifestoPorMotorista(
+  manifestos: ManifestoApi[],
+): Map<number, string> {
   const mapa = new Map<number, string>();
   for (const mf of manifestos) {
     const id = mf.motorista?.idMotorista;
     const data = normalizarData(mf.dataManifesto);
-    if (id == null || !data) continue;
+    if (id == null || !data)
+      continue;
     const atual = mapa.get(id);
-    if (!atual || data > atual) mapa.set(id, data);
+    if (!atual || data > atual)
+      mapa.set(id, data);
   }
   return mapa;
 }
@@ -135,7 +152,12 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 export function useDrivers(userName: string) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [avaliacao, setAvaliacao] = useState<Avaliacao>({ motoristaId: 0, nota: 5, feedback: "" });
+  const [avaliacao, setAvaliacao] = useState<Avaliacao>({
+    motoristaId: 0,
+    nota: 5,
+    numeroManifesto: 1,
+    feedback: "",
+  });
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
@@ -147,27 +169,35 @@ export function useDrivers(userName: string) {
         // Se manifestos falhar, a lista de motoristas ainda carrega.
         fetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
       ]);
-      if (!resMot.ok) throw new Error("API motoristas indisponível");
+      if (!resMot.ok)
+        throw new Error("API motoristas indisponível");
       const data: unknown = await resMot.json();
       if (!Array.isArray(data)) {
-        throw new Error("A API de motoristas retornou um formato inesperado.");
+        throw new TypeError(
+          "A API de motoristas retornou um formato inesperado.",
+        );
       }
 
       let manifestos: ManifestoApi[] = [];
       if (resMan?.ok) {
         const mf: unknown = await resMan.json();
-        if (Array.isArray(mf)) manifestos = mf as ManifestoApi[];
+        if (Array.isArray(mf))
+          manifestos = mf as ManifestoApi[];
       }
       const ultimoPorMotorista = ultimoManifestoPorMotorista(manifestos);
 
       // A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
-      setDrivers((data as MotoristaApi[]).map(m =>
-        mapMotorista(m, ultimoPorMotorista.get(m.idMotorista)),
-      ));
-    } catch (e) {
+      setDrivers(
+        (data as MotoristaApi[]).map(m =>
+          mapMotorista(m, ultimoPorMotorista.get(m.idMotorista)),
+        ),
+      );
+    }
+    catch (e) {
       setDrivers([]);
       console.error("Falha ao carregar motoristas da API:", e);
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   }, []);
@@ -180,16 +210,20 @@ export function useDrivers(userName: string) {
     return [...drivers].sort((a, b) => {
       const orderA = STATUS_ORDER.indexOf(a.status);
       const orderB = STATUS_ORDER.indexOf(b.status);
-      if (orderA !== orderB) return orderA - orderB;
+      if (orderA !== orderB)
+        return orderA - orderB;
 
       const hasManifestA = !!a.manifestoData;
       const hasManifestB = !!b.manifestoData;
-      if (!hasManifestA && hasManifestB) return -1;
-      if (hasManifestA && !hasManifestB) return 1;
+      if (!hasManifestA && hasManifestB)
+        return -1;
+      if (hasManifestA && !hasManifestB)
+        return 1;
       if (hasManifestA && hasManifestB) {
         const timeA = new Date(a.manifestoData).getTime();
         const timeB = new Date(b.manifestoData).getTime();
-        if (timeA !== timeB) return timeA - timeB;
+        if (timeA !== timeB)
+          return timeA - timeB;
       }
 
       return a.nome.localeCompare(b.nome, "pt-BR");
@@ -200,22 +234,36 @@ export function useDrivers(userName: string) {
 
   function select(id: string) {
     setSelectedId(id);
-    setDrivers(ds => ds.map((d) => {
-      if (d.id === id)
-        return d.lockedBy && d.lockedBy !== "Você" ? d : { ...d, lockedBy: "Você" };
-      if (d.lockedBy === "Você")
-        return { ...d, lockedBy: null };
-      return d;
-    }));
+    setDrivers(ds =>
+      ds.map((d) => {
+        if (d.id === id) {
+          return d.lockedBy && d.lockedBy !== "Você"
+            ? d
+            : { ...d, lockedBy: "Você" };
+        }
+        if (d.lockedBy === "Você")
+          return { ...d, lockedBy: null };
+        return d;
+      }),
+    );
   }
 
   function closeDetail() {
-    setDrivers(ds => ds.map(d => (d.id === selectedId && d.lockedBy === "Você") ? { ...d, lockedBy: null } : d));
+    setDrivers(ds =>
+      ds.map(d =>
+        d.id === selectedId && d.lockedBy === "Você"
+          ? { ...d, lockedBy: null }
+          : d,
+      ),
+    );
     setSelectedId(null);
   }
 
   // Grava o status no banco. Retorna true se deu certo.
-  async function salvarStatus(id: string, status: DriverStatus): Promise<boolean> {
+  async function salvarStatus(
+    id: string,
+    status: DriverStatus,
+  ): Promise<boolean> {
     // Motoristas vindos da importação (ids "imp-...") ainda não existem no banco.
     if (!/^\d+$/.test(id)) {
       console.log("[salvarStatus] id não numérico, não grava no banco:", id);
@@ -226,12 +274,17 @@ export function useDrivers(userName: string) {
       const res = await fetch(`${MOTORISTA_URL}/api/status/updateStatus`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ motoristaId: Number(id), status: STATUS_API[status] }),
+        body: JSON.stringify({
+          motoristaId: Number(id),
+          status: STATUS_API[status],
+        }),
       });
       console.log("[salvarStatus] resposta", res.status);
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok)
+        throw new Error(await res.text());
       return true;
-    } catch (e) {
+    }
+    catch (e) {
       console.error("Falha ao atualizar status:", e);
       return false;
     }
@@ -241,26 +294,38 @@ export function useDrivers(userName: string) {
     const anterior = drivers.find(d => d.id === id)?.status;
     console.log("[changeStatus] chamado", { id, de: anterior, para: status });
     // O backend recusa (400) quando o status novo é igual ao atual de quem está Disponível.
-    if (anterior === status) return;
-    setDrivers(ds => ds.map(d => d.id === id ? { ...d, status } : d));
+    if (anterior === status)
+      return;
+    setDrivers(ds => ds.map(d => (d.id === id ? { ...d, status } : d)));
 
     const ok = await salvarStatus(id, status);
     if (!ok) {
       if (anterior) {
-        setDrivers(ds => ds.map(d => d.id === id ? { ...d, status: anterior } : d));
+        setDrivers(ds =>
+          ds.map(d => (d.id === id ? { ...d, status: anterior } : d)),
+        );
       }
-      window.alert("Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.");
+      window.alert(
+        "Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.",
+      );
     }
   }
 
   function concludeRoute(motoristaId: number, nota: number, feedback: string) {
-    setDrivers(ds => ds.map(d => d.id === String(motoristaId)
-      ? {
-          ...d,
-          status: "disponivel" as DriverStatus,
-          avaliacoes: [{ nota, obs: feedback, data: TODAY, operador: userName }, ...d.avaliacoes],
-        }
-      : d));
+    setDrivers(ds =>
+      ds.map(d =>
+        d.id === String(motoristaId)
+          ? {
+              ...d,
+              status: "disponivel" as DriverStatus,
+              avaliacoes: [
+                { nota, obs: feedback, data: TODAY, operador: userName },
+                ...d.avaliacoes,
+              ],
+            }
+          : d,
+      ),
+    );
   }
 
   async function sendAvaliacao(): Promise<boolean> {
@@ -285,6 +350,7 @@ export function useDrivers(userName: string) {
         body: JSON.stringify({
           motoristaId: avaliacao.motoristaId,
           nota: avaliacao.nota,
+          numeroManifesto: avaliacao.numeroManifesto,
           feedback: avaliacao.feedback,
         }),
       });
@@ -296,22 +362,40 @@ export function useDrivers(userName: string) {
       }
 
       // Concluir a rota também volta o motorista para "Disponível" no banco.
-      const atual = drivers.find(d => d.id === String(avaliacao.motoristaId))?.status;
-      const statusOk = atual === "disponivel"
-        ? true
-        : await salvarStatus(String(avaliacao.motoristaId), "disponivel");
+      const atual = drivers.find(
+        d => d.id === String(avaliacao.motoristaId),
+      )?.status;
+      const statusOk
+        = atual === "disponivel"
+          ? true
+          : await salvarStatus(String(avaliacao.motoristaId), "disponivel");
       if (!statusOk) {
-        window.alert("A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.");
-        setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+        window.alert(
+          "A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.",
+        );
+        setAvaliacao({
+          motoristaId: 0,
+          nota: 5,
+          numeroManifesto: 1,
+          feedback: "",
+        });
         void loadFromApi();
         return true;
       }
 
       concludeRoute(avaliacao.motoristaId, avaliacao.nota, avaliacao.feedback);
-      setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+      setAvaliacao({
+        motoristaId: 0,
+        nota: 5,
+        numeroManifesto: 1,
+        feedback: "",
+      });
       return true;
-    } catch (e) {
-      setError("Não foi possível conectar ao serviço de avaliação. Verifique se está rodando.");
+    }
+    catch {
+      setError(
+        "Não foi possível conectar ao serviço de avaliação. Verifique se está rodando.",
+      );
       return false;
     }
   }
