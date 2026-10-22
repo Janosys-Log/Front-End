@@ -23,8 +23,8 @@ export default function RouteNetworkBackground({ theme }: { theme: Theme }) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const palette = theme === "light"
-      ? { bg: "#F5F6F8", roadRGB: "23,26,29", accentRGB: "255,107,53" }
-      : { bg: "#14181C", roadRGB: "237,239,241", accentRGB: "255,148,102" };
+      ? { bg: "#E8EEF6", roadRGB: "19,38,122", accentRGB: "38,77,234" }
+      : { bg: "#14181C", roadRGB: "255,148,102", accentRGB: "255,107,53" };
     const ROAD_ALPHA = 0.09;
     const NODE_ALPHA = 0.22;
 

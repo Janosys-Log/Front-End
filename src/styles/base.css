@@ -19,9 +19,20 @@ body,
   --text: #edeff1;
   --muted: #8a9099;
   --accent: #ff6b35;
+  --nav-bg: #13267a;
+  --nav-text: #e2e9f4;
+  --nav-muted: #a8baff;
+  --nav-accent: #264dea;
+  --nav-hover: #263f9f;
+  --surface: var(--panel);
+  --surface-2: var(--panel-2);
+  --primary: var(--accent);
+  --danger: #e5484d;
+  --success: #2fbf71;
   --scroll-thumb: #3a424c;
   --scroll-track: transparent;
   font-family: "Inter", sans-serif;
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
@@ -39,7 +50,13 @@ body,
   --text: #1a2a3a;
   --muted: #5a6f85;
   --accent: #2b6cb0;
+  --nav-bg: #13267a;
+  --nav-text: #e2e9f4;
+  --nav-muted: #a8baff;
+  --nav-accent: #264dea;
+  --nav-hover: #264dea;
   --scroll-thumb: #a8bdd4;
+  color-scheme: light;
   --scroll-track: transparent;
   background: var(--bg);
 }

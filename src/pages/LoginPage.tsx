@@ -1,5 +1,5 @@
 import type { Role, Theme } from "../types/app";
-import { LogIn } from "lucide-react";
+import { LogIn, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import RouteNetworkBackground from "../components/login/RouteNetworkBackground";
 import useUsuario from "../hooks/useUsuario";
@@ -7,9 +7,10 @@ import { login } from "../services/auth.service";
 
 type Props = {
   theme: Theme;
+  onToggleTheme: () => void;
 };
 
-export default function LoginPage({ theme }: Props) {
+export default function LoginPage({ theme, onToggleTheme }: Props) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +53,15 @@ export default function LoginPage({ theme }: Props) {
       <RouteNetworkBackground theme={theme} />
       <div className="login-vignette" />
       <div className="login-card">
+        <button
+          type="button"
+          className="login-theme-toggle"
+          onClick={onToggleTheme}
+          title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+        >
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
         <div className="brand">
           <div className="brand-mark">JS</div>
           <div>
