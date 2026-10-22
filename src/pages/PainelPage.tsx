@@ -5,7 +5,7 @@ import { useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
 import ListToolbar from "../components/drivers/ListToolbar";
-import Sidebar from "../components/layout/Sidebar";
+import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
 import ImportModal from "../components/modals/ImportModal";
 import { useDrivers } from "../hooks/useDrivers";
@@ -26,20 +26,17 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [importOpen, setImportOpen] = useState(false);
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { width: listWidth, resizing, containerRef, handleProps } = useResizableWidth();
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
 
   return (
     <>
-      <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}>
-        <Sidebar
+      <div className="app-shell">
+        <NavbarPilula
           role={session.role}
           userName={session.userName}
           theme={theme}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           onToggleTheme={onToggleTheme}
           onLogout={logout}
           onReset={() => {
