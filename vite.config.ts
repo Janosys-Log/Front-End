@@ -10,5 +10,9 @@ export default defineConfig({
     tailwindcss(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
- 
+  server: {
+    proxy: {
+      "/csv": "http://localhost:8080",
+    },
+  },
 });
