@@ -57,7 +57,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const initialView = viewFromPath(window.location.pathname);
   const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const previousView = useRef(view);
-  const [accessDenied, setAccessDenied] = useState(session.role !== "gerente" && initialView === "usuarios");
   const {
     width: listWidth,
     resizing,
@@ -86,10 +85,8 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
       if (requestedView === "usuarios" && session.role !== "gerente") {
         window.history.replaceState(null, "", viewPaths.motoristas);
         setView("motoristas");
-        setAccessDenied(true);
         return;
       }
-      setAccessDenied(false);
       setView(requestedView);
     };
     window.addEventListener("popstate", handlePopState);
@@ -103,10 +100,8 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
 
   function navigateTo(nextView: View) {
     if (nextView === "usuarios" && session.role !== "gerente") {
-      setAccessDenied(true);
       return;
     }
-    setAccessDenied(false);
     setView(nextView);
     window.history.pushState(null, "", viewPaths[nextView]);
   }
@@ -124,7 +119,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           onLogout={logout}
         />
 
-        {accessDenied && view === "motoristas" && <p className="access-denied-message" role="alert">Você não tem permissão para acessar esta área.</p>}
         {view === "dashboard"
           ? <main className="app-content dashboard-empty" aria-label="Dashboard" />
           : view === "usuarios"
