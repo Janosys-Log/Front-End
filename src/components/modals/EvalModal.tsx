@@ -7,6 +7,7 @@ import Modal from "../common/Modal";
 type AvaliacaoState = {
   motoristaId: number;
   nota: number;
+  numeroManifesto: number;
   feedback: string;
 };
 
@@ -44,7 +45,8 @@ export default function EvalModal({
     setSubmitting(true);
     const ok = await sendAvaliacao();
     setSubmitting(false);
-    if (ok) onClose();
+    if (ok)
+      onClose();
   };
 
   return (
@@ -63,24 +65,49 @@ export default function EvalModal({
             required
             className="ml-2"
             value={avaliacao.nota}
-            onChange={e => setAvaliacao(prev => ({ ...prev, nota: Number(e.target.value) }))}
+            onChange={e =>
+              setAvaliacao(prev => ({
+                ...prev,
+                nota: Number(e.target.value),
+              }))}
           >
             {[1, 2, 3, 4, 5].map(n => (
-              <option key={n} value={n}>{n}</option>
+              <option key={n} value={n}>
+                {n}
+              </option>
             ))}
           </select>
+        </label>
+        <label className="modal-score">
+          Número do manifesto:
+          <input
+            required
+            type="number"
+            min="1"
+            placeholder="Digite o número do manifesto"
+            className="w-fit ml-2"
+            value={avaliacao.numeroManifesto}
+            onChange={e =>
+              setAvaliacao(prev => ({
+                ...prev,
+                numeroManifesto: Number(e.target.value),
+              }))}
+          />
         </label>
         <textarea
           required
           placeholder="Observação sobre o frete realizado..."
           value={avaliacao.feedback}
-          onChange={e => setAvaliacao(prev => ({ ...prev, feedback: e.target.value }))}
+          onChange={e =>
+            setAvaliacao(prev => ({ ...prev, feedback: e.target.value }))}
         />
         {error && (
           <p style={{ color: "#E5484D", fontSize: 12, margin: 0 }}>{error}</p>
         )}
         <div className="modal-actions">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn-ghost" onClick={onClose}>
+            Cancelar
+          </button>
           <button
             type="submit"
             className="btn-primary"
