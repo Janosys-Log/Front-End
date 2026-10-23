@@ -21,8 +21,13 @@
 }
 
 .csv-modal {
-  background: var(--surface, #fff);
-  color: var(--text, #111);
+  /* Este modal é renderizado em um portal direto no body, fora de .shell. */
+  --surface: #1b2025;
+  --surface-2: #21262c;
+  --text: #edeff1;
+  --border: #2c3238;
+  background: var(--surface);
+  color: var(--text);
   border-radius: 12px;
   width: min(900px, 100%);
   max-height: 85vh;
@@ -30,6 +35,13 @@
   flex-direction: column;
   padding: 20px 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+body:has(.shell.theme-light) .csv-modal {
+  --surface: #e6efff;
+  --surface-2: #d4e3fb;
+  --text: #1a2a3a;
+  --border: #a9bee2;
 }
 
 .csv-modal__header {

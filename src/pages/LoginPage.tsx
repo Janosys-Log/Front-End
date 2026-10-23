@@ -4,6 +4,8 @@ import { useState } from "react";
 import RouteNetworkBackground from "../components/login/RouteNetworkBackground";
 import useUsuario from "../hooks/useUsuario";
 import { login } from "../services/auth.service";
+import janosLogoAzul from "../assets/brand/janos-logo-blue.png";
+import janosLogoLaranja from "../assets/brand/janos-logo-orange.png";
 
 type Props = {
   theme: Theme;
@@ -63,11 +65,11 @@ export default function LoginPage({ theme, onToggleTheme }: Props) {
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         <div className="brand">
-          <div className="brand-mark">JS</div>
-          <div>
-            <div className="brand-name">Janosys</div>
-            <div className="brand-sub">Painel de Motoristas</div>
-          </div>
+          <img
+            className="login-brand-logo"
+            src={theme === "dark" ? janosLogoLaranja : janosLogoAzul}
+            alt="Janos Logística Integrada"
+          />
         </div>
         <h1>Entrar no painel</h1>
         <p className="login-copy">Acompanhe manifestos, status de rota e avaliações da frota em um só lugar.</p>

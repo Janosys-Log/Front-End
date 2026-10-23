@@ -13,6 +13,10 @@
   flex: 1;
   display: flex;
   min-height: 0;
+  gap: 4px;
+  overflow: hidden;
+  border-radius: 18px 18px 0 0;
+  background: var(--panel-2);
   transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -38,14 +42,15 @@
   width: 320px;
   min-width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
   background: var(--panel);
   transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .detail-col {
   flex: 1;
-  background: var(--bg);
+  border-radius: 18px 18px 0 0;
+  background: var(--panel);
   min-width: 0;
 }
 
@@ -53,8 +58,8 @@
 .resize-handle {
   position: relative;
   flex-shrink: 0;
-  width: 6px;
-  margin: 0 -3px;
+  width: 8px;
+  margin: 0 -4px;
   z-index: 5;
   cursor: col-resize;
   touch-action: none;

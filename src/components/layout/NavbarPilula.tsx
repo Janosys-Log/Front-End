@@ -1,5 +1,7 @@
 import type { Role, Theme, View } from "../../types/app";
 import { LayoutDashboard, LogOut, Moon, Sun, Truck, Upload, Users } from "lucide-react";
+import janosLogoAzul from "../../assets/brand/janos-logo-blue.png";
+import janosLogoLaranja from "../../assets/brand/janos-logo-orange.png";
 
 type Props = {
   role: Role;
@@ -21,9 +23,8 @@ const tabs: { view: View; label: string; icon: typeof LayoutDashboard }[] = [
 export default function NavbarPilula({ role, userName, theme, view, onNavigate, onToggleTheme, onLogout }: Props) {
   return (
     <nav className={`nav-pill ${role === "gerente" ? "manager" : "operator"}`} aria-label="Navegação principal">
-      <a className="nav-brand" href="/motoristas" onClick={(event) => { event.preventDefault(); onNavigate("motoristas"); }} aria-label="Janosys, Motoristas">
-        <span className="nav-brand-mark">J</span>
-        <span className="nav-brand-name">JANOSYS</span>
+      <a className="nav-brand" href="/motoristas" onClick={(event) => { event.preventDefault(); onNavigate("motoristas"); }} aria-label="Janos, página Motoristas">
+        <img className="nav-logo" src={theme === "dark" ? janosLogoLaranja : janosLogoAzul} alt="Janos Logística Integrada" />
       </a>
 
       <div className="nav-pill-items">
