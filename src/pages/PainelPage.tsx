@@ -4,22 +4,34 @@
 import type { CategoriaVeiculo, TipoVeiculo } from "../constants/vehicles";
 import type { Theme, View } from "../types/app";
 import type { StatusFilter } from "../types/driver";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
 import ListToolbar from "../components/drivers/ListToolbar";
-import Sidebar from "../components/layout/Sidebar";
+import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
-import ImportModal from "../components/modals/ImportModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
+import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
 type Props = {
   theme: Theme;
   onToggleTheme: () => void;
 };
+
+const viewPaths: Record<View, string> = {
+  dashboard: "/dashboard",
+  motoristas: "/motoristas",
+  upload: "/upload",
+  usuarios: "/usuarios",
+};
+
+function viewFromPath(pathname: string): View {
+  const match = (Object.entries(viewPaths) as [View, string][]).find(([, path]) => path === pathname);
+  return match?.[0] ?? "motoristas";
+}
 
 export default function PainelPage({ theme, onToggleTheme }: Props) {
   const { session, logout } = useUsuario();
@@ -31,9 +43,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     select,
     closeDetail,
     changeStatus,
-    reset,
-    reload,
-    importar,
+    reset: resetDrivers,
     avaliacao,
     setAvaliacao,
     sendAvaliacao,
@@ -43,13 +53,11 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoriaVeiculo | "all">("all");
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
-  const [importOpen, setImportOpen] = useState(false);
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
-  const [viewEscolhida, setViewEscolhida] = useState<View>("painel");
-
-  // Operacional nunca vê a tela de usuários, mesmo se o estado for alterado
-  const view: View = session.role === "gerente" ? viewEscolhida : "painel";
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const initialView = viewFromPath(window.location.pathname);
+  const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
+  const previousView = useRef(view);
+  const [accessDenied, setAccessDenied] = useState(session.role !== "gerente" && initialView === "usuarios");
   const {
     width: listWidth,
     resizing,
@@ -59,35 +67,80 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
 
+  useEffect(() => {
+    if (previousView.current === view) return;
+    previousView.current = view;
+    setQuery("");
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setTypeFilter("all");
+    setEvalDriverId(null);
+    setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
+    closeDetail();
+    if (view === "motoristas") resetDrivers();
+  }, [view, closeDetail, resetDrivers, setAvaliacao]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const requestedView = viewFromPath(window.location.pathname);
+      if (requestedView === "usuarios" && session.role !== "gerente") {
+        window.history.replaceState(null, "", viewPaths.motoristas);
+        setView("motoristas");
+        setAccessDenied(true);
+        return;
+      }
+      setAccessDenied(false);
+      setView(requestedView);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [session.role]);
+
+  useEffect(() => {
+    if (window.location.pathname !== viewPaths[view])
+      window.history.replaceState(null, "", viewPaths[view]);
+  }, [session.role, view]);
+
+  function navigateTo(nextView: View) {
+    if (nextView === "usuarios" && session.role !== "gerente") {
+      setAccessDenied(true);
+      return;
+    }
+    setAccessDenied(false);
+    setView(nextView);
+    window.history.pushState(null, "", viewPaths[nextView]);
+  }
+
   return (
     <>
-      <div
-        className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
-      >
-        <Sidebar
+      <div className="app-shell">
+        <NavbarPilula
           role={session.role}
           userName={session.userName}
           theme={theme}
           view={view}
-          onNavigate={setViewEscolhida}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+          onNavigate={navigateTo}
           onToggleTheme={onToggleTheme}
           onLogout={logout}
-          onReset={() => {
-            reset();
-            reload();
-          }}
-          onImport={() => setImportOpen(true)}
         />
 
-        {view === "usuarios"
+        {accessDenied && view === "motoristas" && <p className="access-denied-message" role="alert">Você não tem permissão para acessar esta área.</p>}
+        {view === "dashboard"
+          ? <main className="app-content dashboard-empty" aria-label="Dashboard" />
+          : view === "usuarios"
           ? (
               <div className="app-content">
                 <UsuariosPage />
               </div>
             )
-          : (
+          : view === "upload"
+            ? (
+                <div className="app-content">
+                  <UploadPage />
+                </div>
+              )
+          : view === "motoristas"
+            ? (
               <div
                 ref={containerRef}
                 className={`app-content${resizing ? " resizing" : ""}`}
@@ -136,18 +189,9 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                   />
                 </div>
               </div>
-            )}
+              )
+            : null}
       </div>
-
-      {importOpen && (
-        <ImportModal
-          onClose={() => setImportOpen(false)}
-          onImport={(res) => {
-            importar(res.veiculosValidos);
-            setImportOpen(false);
-          }}
-        />
-      )}
 
       {evalDriver && (
         <EvalModal

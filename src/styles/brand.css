@@ -8,15 +8,15 @@
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: linear-gradient(150deg, var(--accent), #c94e1f);
-  color: #1a0e05;
+  background: #264dea;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: "Oswald";
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 6px 16px -4px rgba(255, 107, 53, 0.5);
+  box-shadow: 0 6px 16px -4px rgba(38, 77, 234, 0.45);
 }
 .brand-mark.small {
   width: 26px;

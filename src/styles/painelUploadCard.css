@@ -1,12 +1,12 @@
 /* PainelPage > UploadCard */
 .painel-upload-card {
-  --upload-bg: #e9ebee;
-  --upload-borda: #2b2f36;
-  --upload-texto: #14171c;
-  --upload-texto-suave: #4a5059;
+  --upload-bg: var(--panel);
+  --upload-borda: var(--border);
+  --upload-texto: var(--text);
+  --upload-texto-suave: var(--muted);
   --upload-ok: #22a45d;
   --upload-erro: #c0392b;
-  --upload-destaque: #2563eb;
+  --upload-destaque: var(--accent);
 
   flex: 1 1 0;
   min-width: 280px;
@@ -62,17 +62,17 @@
   padding: 6px 16px;
   font: inherit;
   font-size: 0.85rem;
-  color: var(--upload-texto);
-  background: #fff;
-  border: 1px solid #cfd3d9;
+  color: #fff;
+  background: var(--upload-destaque);
+  border: 1px solid var(--upload-destaque);
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(20, 23, 28, 0.08);
+  box-shadow: 0 1px 2px rgba(20, 23, 28, 0.12);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .painel-upload-card__botao:hover:not(:disabled) {
-  border-color: var(--upload-destaque);
+  filter: brightness(1.08);
 }
 
 .painel-upload-card__botao:focus-visible {

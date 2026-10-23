@@ -19,9 +19,22 @@ body,
   --text: #edeff1;
   --muted: #8a9099;
   --accent: #ff6b35;
+  --nav-bg: #70280c;
+  --nav-text: #fff4ef;
+  --nav-muted: #ffd0b8;
+  --nav-accent: #ff6b35;
+  --nav-hover: #8d3514;
+  --nav-active-text: #1a0e05;
+  --nav-border: #d8764b;
+  --surface: var(--panel);
+  --surface-2: var(--panel-2);
+  --primary: var(--accent);
+  --danger: #e5484d;
+  --success: #2fbf71;
   --scroll-thumb: #3a424c;
   --scroll-track: transparent;
   font-family: "Inter", sans-serif;
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   min-height: 100vh;
@@ -32,14 +45,22 @@ body,
 }
 
 .shell.theme-light {
-  --bg: #e8eef6;
-  --panel: #f2f6fb;
-  --panel-2: #e4ecf5;
-  --border: #c8d4e3;
+  --bg: #dce8fa;
+  --panel: #e6efff;
+  --panel-2: #d4e3fb;
+  --border: #a9bee2;
   --text: #1a2a3a;
   --muted: #5a6f85;
   --accent: #2b6cb0;
+  --nav-bg: #173b9f;
+  --nav-text: #fff;
+  --nav-muted: #dbe4ff;
+  --nav-accent: #3865e8;
+  --nav-hover: #244fc5;
+  --nav-active-text: #fff;
+  --nav-border: #82a5ff;
   --scroll-thumb: #a8bdd4;
+  color-scheme: light;
   --scroll-track: transparent;
   background: var(--bg);
 }

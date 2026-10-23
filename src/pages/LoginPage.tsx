@@ -1,15 +1,18 @@
 import type { Role, Theme } from "../types/app";
-import { LogIn } from "lucide-react";
+import { LogIn, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import RouteNetworkBackground from "../components/login/RouteNetworkBackground";
 import useUsuario from "../hooks/useUsuario";
 import { login } from "../services/auth.service";
+import janosLogoAzul from "../assets/brand/janos-logo-blue.png";
+import janosLogoLaranja from "../assets/brand/janos-logo-orange.png";
 
 type Props = {
   theme: Theme;
+  onToggleTheme: () => void;
 };
 
-export default function LoginPage({ theme }: Props) {
+export default function LoginPage({ theme, onToggleTheme }: Props) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,12 +55,21 @@ export default function LoginPage({ theme }: Props) {
       <RouteNetworkBackground theme={theme} />
       <div className="login-vignette" />
       <div className="login-card">
+        <button
+          type="button"
+          className="login-theme-toggle"
+          onClick={onToggleTheme}
+          title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+        >
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
         <div className="brand">
-          <div className="brand-mark">JS</div>
-          <div>
-            <div className="brand-name">Janosys</div>
-            <div className="brand-sub">Painel de Motoristas</div>
-          </div>
+          <img
+            className="login-brand-logo"
+            src={theme === "dark" ? janosLogoLaranja : janosLogoAzul}
+            alt="Janos Logística Integrada"
+          />
         </div>
         <h1>Entrar no painel</h1>
         <p className="login-copy">Acompanhe manifestos, status de rota e avaliações da frota em um só lugar.</p>

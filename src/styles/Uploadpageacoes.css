@@ -24,8 +24,8 @@
   padding: 14px 36px;
   border: none;
   border-radius: 10px;
-  background: #1a2a7a;
-  color: #fff;
+  background: var(--accent);
+  color: var(--text);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -33,11 +33,11 @@
 }
 
 .upload-page__enviar:hover:not(:disabled) {
-  background: #14216a;
+  background: color-mix(in srgb, var(--accent) 82%, black);
 }
 
 .upload-page__enviar:focus-visible {
-  outline: 3px solid #8fa0ff;
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -53,10 +53,10 @@
   max-width: 560px;
   margin: 0;
   padding: 10px 16px;
-  border: 1px solid #f0b4b4;
+  border: 1px solid color-mix(in srgb, #e5484d 45%, var(--border));
   border-radius: 8px;
-  background: #fdecec;
-  color: #a12626;
+  background: color-mix(in srgb, #e5484d 14%, var(--panel));
+  color: #e5484d;
   font-size: 0.95rem;
 }
 

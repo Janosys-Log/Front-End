@@ -10,7 +10,7 @@ import type { Driver, DriverStatus } from "../types/driver";
 // manifestoService.ts e importacao.service.ts
 
 const MOTORISTA_URL = "http://localhost:8083";
-const AVALIACAO_URL = "http://localhost:8081";
+const AVALIACAO_URL = "http://localhost:8082";
 
 // Chave onde o auth.service.ts guarda o token no localStorage.
 // Confira com: grep -n "localStorage" src/services/auth.service.ts
@@ -19,6 +19,7 @@ const AVALIACAO_URL = "http://localhost:8081";
 type Avaliacao = {
 	motoristaId: number;
 	nota: number;
+	numeroManifesto: number;
 	feedback: string;
 };
 
@@ -152,6 +153,7 @@ export function useDrivers(userName: string) {
 	const [avaliacao, setAvaliacao] = useState<Avaliacao>({
 		motoristaId: 0,
 		nota: 5,
+		numeroManifesto: 0,
 		feedback: "",
 	});
 	const [error, setError] = useState<string>("");
@@ -325,6 +327,10 @@ export function useDrivers(userName: string) {
 			setError("Nota deve ser de 1 a 5");
 			return false;
 		}
+		if (!Number.isInteger(avaliacao.numeroManifesto) || avaliacao.numeroManifesto <= 0) {
+			setError("Número do manifesto inválido");
+			return false;
+		}
 
 		try {
 			const responseAvaliacao = await apiFetch(
@@ -334,6 +340,7 @@ export function useDrivers(userName: string) {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						motoristaId: avaliacao.motoristaId,
+						numeroManifesto: avaliacao.numeroManifesto,
 						nota: avaliacao.nota,
 						feedback: avaliacao.feedback,
 					}),
@@ -363,13 +370,13 @@ export function useDrivers(userName: string) {
 				window.alert(
 					"A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.",
 				);
-				setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+				setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
 				void loadFromApi();
 				return true;
 			}
 
 			concludeRoute(avaliacao.motoristaId, avaliacao.nota, avaliacao.feedback);
-			setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+			setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
 			return true;
 		} catch (e) {
 			setError(
@@ -379,10 +386,10 @@ export function useDrivers(userName: string) {
 		}
 	}
 
-	function reset() {
+	const reset = useCallback(() => {
 		setSelectedId(null);
 		void loadFromApi();
-	}
+	}, [loadFromApi]);
 
 	function importar(veiculos: VeiculoDTO[]) {
 		setDrivers(veiculosParaDrivers(veiculos));

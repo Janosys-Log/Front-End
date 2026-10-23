@@ -73,8 +73,14 @@ export function obterSessao(): StoredSession | null {
 
     const session: StoredSession = JSON.parse(raw);
 
+    // Algumas respostas da API enviam epoch em segundos e outras em milissegundos.
+    // Date.now() sempre usa milissegundos.
+    const expiraEmMs = session.expiraEm && session.expiraEm < 1_000_000_000_000
+      ? session.expiraEm * 1_000
+      : session.expiraEm;
+
     // Se o token já expirou, limpa a sessão
-    if (session.expiraEm && Date.now() >= session.expiraEm) {
+    if (expiraEmMs && Date.now() >= expiraEmMs) {
       limparSessao();
       return null;
     }
