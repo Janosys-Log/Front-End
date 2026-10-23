@@ -36,6 +36,7 @@ export default function EvalModal({
       ...prev,
       motoristaId: Number.isFinite(id) ? id : 0,
       nota: 5,
+      numeroManifesto: 0,
       feedback: "",
     }));
   }, [driver.id, setAvaliacao]);

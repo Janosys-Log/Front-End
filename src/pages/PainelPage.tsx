@@ -75,7 +75,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     setCategoryFilter("all");
     setTypeFilter("all");
     setEvalDriverId(null);
-    setAvaliacao({ motoristaId: 0, nota: 5, feedback: "" });
+    setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
     closeDetail();
     if (view === "motoristas") resetDrivers();
   }, [view, closeDetail, resetDrivers, setAvaliacao]);
