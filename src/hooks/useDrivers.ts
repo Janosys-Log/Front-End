@@ -49,6 +49,28 @@ type ManifestoApi = {
 	motorista?: { idMotorista: number } | null;
 };
 
+type AvaliacaoApi = {
+	motoristaId: number;
+	nota: number;
+	feedback: string;
+	dataRegistro: string;
+};
+
+async function carregarAvaliacoes(motoristaId: number) {
+	const response = await apiFetch(
+		`${AVALIACAO_URL}/api/avaliacoes?motoristaId=${motoristaId}`,
+	);
+	if (!response.ok) throw new Error(`Falha ao carregar avaliações (${response.status})`);
+	const data: unknown = await response.json();
+	if (!Array.isArray(data)) throw new Error("Formato de avaliações inesperado");
+	return (data as AvaliacaoApi[]).map((a) => ({
+		nota: a.nota,
+		obs: a.feedback,
+		data: a.dataRegistro?.slice(0, 10) ?? "",
+		operador: "",
+	}));
+}
+
 const STATUS_API: Record<DriverStatus, string> = {
 	disponivel: "Disponivel",
 	em_rota: "Em_Rota",
@@ -183,11 +205,19 @@ export function useDrivers(userName: string) {
 			const ultimoPorMotorista = ultimoManifestoPorMotorista(manifestos);
 
 			// A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
-			setDrivers(
-				(data as MotoristaApi[]).map((m) =>
-					mapMotorista(m, ultimoPorMotorista.get(m.idMotorista)),
-				),
+			const motoristas = data as MotoristaApi[];
+			const driversComAvaliacoes = await Promise.all(
+				motoristas.map(async (m) => {
+					const driver = mapMotorista(m, ultimoPorMotorista.get(m.idMotorista));
+					try {
+						driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
+					} catch (e) {
+						console.error(`Falha ao carregar avaliações do motorista ${m.idMotorista}:`, e);
+					}
+					return driver;
+				}),
 			);
+			setDrivers(driversComAvaliacoes);
 		} catch (e) {
 			setDrivers([]);
 			console.error("Falha ao carregar motoristas da API:", e);
