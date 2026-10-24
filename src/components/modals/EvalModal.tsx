@@ -1,7 +1,9 @@
 import type { SubmitEventHandler } from "react";
 import type { Driver } from "../../types/driver";
 import { CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import useManifesto from "../../hooks/useManifesto";
+import useUsuario from "../../hooks/useUsuario";
 import Modal from "../common/Modal";
 
 type AvaliacaoState = {
@@ -29,6 +31,16 @@ export default function EvalModal({
   error,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
+  const { manifestoIds } = useManifesto();
+
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const ok = await sendAvaliacao();
+    setSubmitting(false);
+    if (ok)
+      onClose();
+  };
 
   useEffect(() => {
     const id = Number(driver.id);
@@ -40,15 +52,6 @@ export default function EvalModal({
       feedback: "",
     }));
   }, [driver.id, setAvaliacao]);
-
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const ok = await sendAvaliacao();
-    setSubmitting(false);
-    if (ok)
-      onClose();
-  };
 
   return (
     <Modal title={`Concluir rota · ${driver.nome}`} onClose={onClose}>
@@ -81,19 +84,25 @@ export default function EvalModal({
         </label>
         <label className="modal-score">
           Número do manifesto:
-          <input
+          <select
             required
-            type="number"
-            min="1"
-            placeholder="Digite o número do manifesto"
-            className="w-fit ml-2"
             value={avaliacao.numeroManifesto}
+            className="ml-2"
             onChange={e =>
               setAvaliacao(prev => ({
                 ...prev,
                 numeroManifesto: Number(e.target.value),
               }))}
-          />
+          >
+            <option disabled value="" selected>
+              Selecione um manifesto
+            </option>
+            {manifestoIds.map(id => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
         </label>
         <textarea
           required
