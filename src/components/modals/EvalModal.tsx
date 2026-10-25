@@ -1,27 +1,56 @@
 import type { SubmitEventHandler } from "react";
 import type { Driver } from "../../types/driver";
 import { CheckCircle2 } from "lucide-react";
-import { useEffect } from "react";
-import { useDrivers } from "../../hooks/useDrivers";
+import { useCallback, useEffect, useState } from "react";
+import useManifesto from "../../hooks/useManifesto";
 import useUsuario from "../../hooks/useUsuario";
 import Modal from "../common/Modal";
+
+type AvaliacaoState = {
+  motoristaId: number;
+  nota: number;
+  numeroManifesto: number;
+  feedback: string;
+};
 
 type Props = {
   driver: Driver;
   onClose: () => void;
+  avaliacao: AvaliacaoState;
+  setAvaliacao: React.Dispatch<React.SetStateAction<AvaliacaoState>>;
+  sendAvaliacao: () => Promise<boolean>;
+  error: string;
 };
 
-export default function EvalModal({ driver, onClose }: Props) {
-  const { session } = useUsuario();
-  const { avaliacao, setAvaliacao, sendAvaliacao } = useDrivers(session?.userName);
+export default function EvalModal({
+  driver,
+  onClose,
+  avaliacao,
+  setAvaliacao,
+  sendAvaliacao,
+  error,
+}: Props) {
+  const [submitting, setSubmitting] = useState(false);
+  const { manifestoIds } = useManifesto();
 
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
-    sendAvaliacao();
+    setSubmitting(true);
+    const ok = await sendAvaliacao();
+    setSubmitting(false);
+    if (ok)
+      onClose();
   };
 
   useEffect(() => {
-    setAvaliacao(prev => ({ ...prev, motoristaId: 42 }));
+    const id = Number(driver.id);
+    setAvaliacao(prev => ({
+      ...prev,
+      motoristaId: Number.isFinite(id) ? id : 0,
+      nota: 5,
+      numeroManifesto: 0,
+      feedback: "",
+    }));
   }, [driver.id, setAvaliacao]);
 
   return (
@@ -35,18 +64,68 @@ export default function EvalModal({ driver, onClose }: Props) {
           como disponível.
         </p>
         <label className="eval-score modal-score">
-          Nota:
-          <select required className="ml-2" value={avaliacao.nota} onChange={e => setAvaliacao(prev => ({ ...prev, nota: Number(e.target.value) }))}>
-            {Array.from({ length: 11 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
+          Nota (1 a 5):
+          <select
+            required
+            className="ml-2"
+            value={avaliacao.nota}
+            onChange={e =>
+              setAvaliacao(prev => ({
+                ...prev,
+                nota: Number(e.target.value),
+              }))}
+          >
+            {[1, 2, 3, 4, 5].map(n => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
           </select>
         </label>
-        <textarea required placeholder="Observação sobre o frete realizado..." value={avaliacao.feedback} onChange={e => setAvaliacao(prev => ({ ...prev, feedback: e.target.value.trim() }))} />
+        <label className="modal-score">
+          Número do manifesto:
+          <select
+            required
+            value={avaliacao.numeroManifesto}
+            className="ml-2"
+            onChange={e =>
+              setAvaliacao(prev => ({
+                ...prev,
+                numeroManifesto: Number(e.target.value),
+              }))}
+          >
+            <option disabled value="" selected>
+              Selecione um manifesto
+            </option>
+            {manifestoIds.map(id => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <textarea
+          required
+          placeholder="Observação sobre o frete realizado..."
+          value={avaliacao.feedback}
+          onChange={e =>
+            setAvaliacao(prev => ({ ...prev, feedback: e.target.value }))}
+        />
+        {error && (
+          <p style={{ color: "#E5484D", fontSize: 12, margin: 0 }}>{error}</p>
+        )}
         <div className="modal-actions">
-          <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="btn-primary" disabled={!avaliacao.feedback.trim()}>
+          <button type="button" className="btn-ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={!avaliacao.feedback.trim() || submitting}
+          >
             <CheckCircle2 size={15} />
             {" "}
-            Concluir e liberar
+            {submitting ? "Salvando..." : "Concluir e liberar"}
           </button>
         </div>
       </form>

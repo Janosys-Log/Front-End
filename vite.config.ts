@@ -12,7 +12,7 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      "/arquivo": "http://localhost:8080",
+      "/csv": "http://localhost:8080",
     },
   },
 });

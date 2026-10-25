@@ -1,5 +1,14 @@
 import type { Driver } from "../types/driver";
+import type {
+  ErroLinha,
+  ResultadoImportacao,
+  ResultadoImportacaoDupla,
+} from "../types/importacao";
 import { TODAY } from "../constants/app";
+import { categoriaDoTipo, normalizarTipo } from "../constants/vehicles";
+import { apiFetch } from "./apiFetch";
+
+const CSV_URL = "http://localhost:8080/csv";
 
 export type VeiculoDTO = {
   placa: string;
@@ -9,47 +18,119 @@ export type VeiculoDTO = {
   tipoVeiculo: string;
 };
 
-export type ErroLinhaCsv = {
-  linha: number;
-  mensagem: string;
+export type ManifestoDTO = {
+  manifestoid: string;
+  data: string;
+  motorista: string;
+  cpfMotorista: string;
+  agregado: string;
+  cnpjAgregado: string;
+  placa: string;
+  destino: string;
+  valorFreteAgregado: string;
+  valorFreteEmpresa: string;
+  observacoes: string;
 };
 
-export type ResultadoImportacao = {
-  veiculosValidos: VeiculoDTO[];
-  veiculosInvalidos: ErroLinhaCsv[];
-};
+type Raw = Record<string, unknown>;
 
-function normalizeVeiculo(raw: Record<string, unknown>): VeiculoDTO {
+const str = (v: unknown) => String(v ?? "");
+
+function normalizeVeiculo(raw: Raw): VeiculoDTO {
   return {
-    placa: String(raw.placa ?? raw.Placa ?? ""),
-    agregado: String(raw.agregado ?? raw.Agregado ?? ""),
-    status: String(raw.status ?? raw.Status ?? ""),
-    motorista: String(raw.motorista ?? raw.Motorista ?? ""),
-    tipoVeiculo: String(raw.tipoVeiculo ?? raw.TipoVeiculo ?? ""),
+    placa: str(raw.placa ?? raw.Placa),
+    agregado: str(raw.agregado ?? raw.Agregado),
+    status: str(raw.status ?? raw.Status),
+    motorista: str(raw.motorista ?? raw.Motorista),
+    tipoVeiculo: str(raw.tipoVeiculo ?? raw.TipoVeiculo),
   };
 }
 
-function normalizeErro(raw: Record<string, unknown>): ErroLinhaCsv {
+function normalizeManifesto(raw: Raw): ManifestoDTO {
+  return {
+    manifestoid: str(raw.manifestoid ?? raw.manifestoId ?? raw.Manifesto),
+    data: str(raw.data ?? raw.Data),
+    motorista: str(raw.motorista ?? raw.Motorista),
+    cpfMotorista: str(raw.cpfmotorista ?? raw.cpfMotorista),
+    agregado: str(raw.agregado ?? raw.Agregado),
+    cnpjAgregado: str(raw.cnpjagregado ?? raw.cnpjAgregado),
+    placa: str(raw.placa ?? raw.Placa),
+    destino: str(raw.destino ?? raw.Destino),
+    valorFreteAgregado: str(raw.valorfreteagregado ?? raw.valorFreteAgregado),
+    valorFreteEmpresa: str(raw.valorfreteempresa ?? raw.valorFreteEmpresa),
+    observacoes: str(raw.observacoes ?? raw.Observacoes),
+  };
+}
+
+function normalizeErro(raw: Raw): ErroLinha {
+  const msg = raw.mensagem ?? raw.Mensagem ?? [];
   return {
     linha: Number(raw.linha ?? raw.Linha ?? 0),
-    mensagem: String(raw.mensagem ?? raw.Mensagem ?? ""),
+    // aceita lista (formato atual do back) ou string solta
+    mensagem: Array.isArray(msg) ? msg.map(String) : [String(msg)],
   };
 }
 
-export async function importarCsv(arquivo: File): Promise<ResultadoImportacao> {
-  const formData = new FormData();
-  formData.append("arquivo", arquivo);
+function normalizeResultado<T>(
+  raw: Raw | undefined,
+  normalizeItem: (r: Raw) => T,
+): ResultadoImportacao<T> {
+  const validos = (raw?.validos ?? []) as Raw[];
+  const invalidos = (raw?.invalidos ?? []) as Raw[];
+  return {
+    validos: validos.map(normalizeItem),
+    invalidos: invalidos.map(normalizeErro),
+  };
+}
 
-  const response = await fetch("/arquivo", { method: "POST", body: formData });
+/** Devolve a mensagem de erro, ou null se os dois arquivos foram escolhidos. */
+export function validarArquivos(
+  veiculos: File | null,
+  manifestos: File | null,
+): string | null {
+  if (!veiculos && !manifestos)
+    return "Faltam os dois arquivos: o CSV de veículos e o CSV de manifestos.";
+  if (!veiculos)
+    return "Falta o CSV de veículos.";
+  if (!manifestos)
+    return "Falta o CSV de manifestos.";
+  return null;
+}
+
+/**
+ * Envia os dois CSVs numa única requisição.
+ * Os nomes dos campos ("csvVeiculo" e "csvManifesto") precisam bater com os
+ * @RequestParam / @RequestPart do controller.
+ * Resposta esperada do back:
+ * { veiculos: { validos, invalidos }, manifestos: { validos, invalidos } }
+ */
+export async function importarCsvs(
+  veiculos: File,
+  manifestos: File,
+): Promise<ResultadoImportacaoDupla<VeiculoDTO, ManifestoDTO>> {
+  const formData = new FormData();
+  formData.append("csvVeiculo", veiculos);
+  formData.append("csvManifesto", manifestos);
+
+  const response = await apiFetch(CSV_URL, { method: "POST", body: formData });
+
+  if (response.status === 401) {
+    throw new Error("Sessão expirada. Faça login novamente.");
+  }
 
   if (!response.ok) {
-    throw new Error(`Falha na importação (HTTP ${response.status}). Verifique se o arquivo é um .csv válido em UTF-8.`);
+    throw new Error(
+      `Falha na importação (HTTP ${response.status}). Verifique se os arquivos são .csv válidos em UTF-8.`,
+    );
   }
 
   const data = await response.json();
+
+  // Hoje o back serializa ResultadoCsv com estes nomes (veja os getters da classe);
+  // aceita também "veiculos"/"manifestos" caso você renomeie com @JsonProperty.
   return {
-    veiculosValidos: (data.veiculosValidos ?? []).map(normalizeVeiculo),
-    veiculosInvalidos: (data.veiculosInvalidos ?? []).map(normalizeErro),
+    veiculos: normalizeResultado(data.veiculos ?? data.resultadoLinhasDoCsv, normalizeVeiculo),
+    manifestos: normalizeResultado(data.manifestos ?? data.resultadoLinhasDoCsv2, normalizeManifesto),
   };
 }
 
@@ -58,10 +139,12 @@ export function veiculosParaDrivers(veiculos: VeiculoDTO[]): Driver[] {
     id: `imp-${v.placa || i}`,
     nome: v.motorista,
     veiculo: v.tipoVeiculo,
+    tipoVeiculo: normalizarTipo(v.tipoVeiculo),
+    categoria: categoriaDoTipo(v.tipoVeiculo),
     placa: v.placa,
     telefone: "",
     manifestoData: TODAY,
-    status: v.status === "Ativo" ? "disponivel" : "outros",
+    status: v.status === "Ativo" ? "disponivel" : "indisponivel",
     lockedBy: null,
     avaliacoes: [],
   }));

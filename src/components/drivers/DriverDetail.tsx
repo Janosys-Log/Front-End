@@ -80,7 +80,7 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
               {" "}
               {avg}
               {" "}
-              / 10
+              / 5
             </strong>
           </div>
         )}

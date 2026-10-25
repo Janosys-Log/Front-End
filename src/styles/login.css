@@ -36,6 +36,39 @@
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55);
   animation: card-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.login-card .brand {
+  margin-bottom: 26px;
+}
+.login-card .btn-primary {
+  color: #fff;
+}
+.login-brand-logo {
+  display: block;
+  width: 190px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.login-theme-toggle {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.login-theme-toggle:hover,
+.login-theme-toggle:focus-visible {
+  color: var(--text);
+  border-color: var(--accent);
+  outline: none;
+}
 @keyframes card-rise {
   from {
     opacity: 0;
@@ -86,7 +119,7 @@
 .field input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.16);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .role-select {
   margin: 8px 0 22px;
