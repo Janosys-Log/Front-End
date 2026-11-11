@@ -1,8 +1,8 @@
 import type { Role } from "../../types/app";
 import type { Driver, DriverStatus } from "../../types/driver";
-import { Calendar, LayoutGrid, Lock, Phone, Star, Truck, X } from "lucide-react";
+import { Calendar, FileText, LayoutGrid, Lock, Phone, Star, Truck, X } from "lucide-react";
 import { STATUS, STATUS_KEYS } from "../../constants/status";
-import { ageDays } from "../../utils/date";
+import { ageDays, formatPhone } from "../../utils/date";
 import Stars from "../common/Stars";
 import StatusPill from "../common/StatusPill";
 
@@ -11,11 +11,12 @@ type Props = {
   role: Role;
   onChangeStatus: (id: string, status: DriverStatus) => void;
   onOpenEvalModal: (id: string) => void;
+  onOpenManifestoModal: (id: string) => void;
   onClose: (() => void) | null;
 };
 
 // Avaliação só aparece ao concluir uma rota (modal) e no histórico da gerência
-export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalModal, onClose }: Props) {
+export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalModal, onOpenManifestoModal, onClose }: Props) {
   if (!driver) {
     return (
       <div className="detail-empty">
@@ -29,6 +30,7 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
     ? (driver.avaliacoes.reduce((s, a) => s + a.nota, 0) / driver.avaliacoes.length).toFixed(1)
     : "—";
   const isLockedByOther = !!driver.lockedBy && driver.lockedBy !== "Você";
+  const emRota = driver.status === "em_rota";
 
   return (
     <div className="detail-panel">
@@ -57,7 +59,7 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
           <strong>
             <Phone size={12} />
             {" "}
-            {driver.telefone}
+            {formatPhone(driver.telefone)}
           </strong>
         </div>
         <div className="info-cell">
@@ -72,6 +74,16 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
             d)
           </strong>
         </div>
+        {driver.manifestoAtual !== undefined && driver.manifestoAtual !== null && (
+          <div className="info-cell">
+            <span>Manifesto em rota</span>
+            <strong>
+              <FileText size={12} />
+              {" "}
+              {driver.manifestoAtual}
+            </strong>
+          </div>
+        )}
         {role === "gerente" && (
           <div className="info-cell">
             <span>Média geral</span>
@@ -108,19 +120,43 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
 
       <div className="status-actions">
         <span className="section-label">Alterar status</span>
-        <div className="status-buttons">
+        <div className={`status-buttons${emRota ? " em-rota" : ""}`}>
           {STATUS_KEYS.map((key) => {
             const s = STATUS[key];
-            const isConclude = key === "disponivel" && driver.status === "em_rota";
+            const isConclude = key === "disponivel" && emRota;
+            const isEnterRoute = key === "em_rota" && !emRota;
+            // Em rota: só o botão "Concluir rota" fica habilitado
+            const bloqueadoPorRota = emRota && !isConclude;
+            const disabled = isLockedByOther || bloqueadoPorRota;
+
+            if (emRota && key === "disponivel") {
+              return (
+                <button
+                  key={key}
+                  disabled={isLockedByOther}
+                  className="status-btn conclude"
+                  onClick={() => onOpenEvalModal(driver.id)}
+                >
+                  Concluir rota (avaliar)
+                </button>
+              );
+            }
+
             return (
               <button
                 key={key}
-                disabled={isLockedByOther}
-                className={`status-btn${driver.status === key ? " active" : ""}${isConclude ? " conclude" : ""}`}
-                style={driver.status === key && !isConclude ? { borderColor: s.color, color: s.color } : {}}
-                onClick={() => isConclude ? onOpenEvalModal(driver.id) : onChangeStatus(driver.id, key)}
+                disabled={disabled}
+                className={`status-btn${driver.status === key ? " active" : ""}`}
+                style={driver.status === key ? { borderColor: s.color, color: s.color } : {}}
+                onClick={() => {
+                  if (disabled) return;
+                  if (isEnterRoute)
+                    onOpenManifestoModal(driver.id);
+                  else
+                    onChangeStatus(driver.id, key);
+                }}
               >
-                {isConclude ? "Concluir rota (avaliar)" : s.label}
+                {s.label}
               </button>
             );
           })}
@@ -137,6 +173,16 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
               <div>
                 <p>{a.obs}</p>
                 <span className="eval-meta">
+                  {a.manifesto != null && (
+                    <>
+                      Manifesto
+                      {" "}
+                      {a.manifesto}
+                      {" "}
+                      ·
+                      {" "}
+                    </>
+                  )}
                   {a.operador}
                   {" "}
                   ·

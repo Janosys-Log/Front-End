@@ -1,9 +1,7 @@
 import type { SubmitEventHandler } from "react";
 import type { Driver } from "../../types/driver";
 import { CheckCircle2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import useManifesto from "../../hooks/useManifesto";
-import useUsuario from "../../hooks/useUsuario";
+import { useEffect, useState } from "react";
 import Modal from "../common/Modal";
 
 type AvaliacaoState = {
@@ -31,7 +29,7 @@ export default function EvalModal({
   error,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const { manifestoIds } = useManifesto();
+  const semManifestoNaRota = driver.manifestoAtual === undefined;
 
   const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -48,10 +46,10 @@ export default function EvalModal({
       ...prev,
       motoristaId: Number.isFinite(id) ? id : 0,
       nota: 5,
-      numeroManifesto: 0,
+      numeroManifesto: driver.manifestoAtual ?? 0,
       feedback: "",
     }));
-  }, [driver.id, setAvaliacao]);
+  }, [driver.id, driver.manifestoAtual, setAvaliacao]);
 
   return (
     <Modal title={`Concluir rota · ${driver.nome}`} onClose={onClose}>
@@ -63,6 +61,20 @@ export default function EvalModal({
           {" "}
           como disponível.
         </p>
+        {semManifestoNaRota
+          ? (
+              <p className="modal-error" role="alert">
+                Esta rota foi iniciada antes do registro do número do manifesto e não pode ser avaliada.
+                Altere o status do motorista para outro e coloque-o em rota novamente informando o manifesto.
+              </p>
+            )
+          : (
+              <p className="modal-copy">
+                Manifesto:
+                {" "}
+                {driver.manifestoAtual}
+              </p>
+            )}
         <label className="eval-score modal-score">
           Nota (1 a 5):
           <select
@@ -82,28 +94,6 @@ export default function EvalModal({
             ))}
           </select>
         </label>
-        <label className="modal-score">
-          Número do manifesto:
-          <select
-            required
-            value={avaliacao.numeroManifesto}
-            className="ml-2"
-            onChange={e =>
-              setAvaliacao(prev => ({
-                ...prev,
-                numeroManifesto: Number(e.target.value),
-              }))}
-          >
-            <option disabled value="" selected>
-              Selecione um manifesto
-            </option>
-            {manifestoIds.map(id => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-        </label>
         <textarea
           required
           placeholder="Observação sobre o frete realizado..."
@@ -112,7 +102,7 @@ export default function EvalModal({
             setAvaliacao(prev => ({ ...prev, feedback: e.target.value }))}
         />
         {error && (
-          <p style={{ color: "#E5484D", fontSize: 12, margin: 0 }}>{error}</p>
+          <p className="modal-error" role="alert">{error}</p>
         )}
         <div className="modal-actions">
           <button type="button" className="btn-ghost" onClick={onClose}>
@@ -121,7 +111,7 @@ export default function EvalModal({
           <button
             type="submit"
             className="btn-primary"
-            disabled={!avaliacao.feedback.trim() || submitting}
+            disabled={!avaliacao.feedback.trim() || submitting || semManifestoNaRota}
           >
             <CheckCircle2 size={15} />
             {" "}
