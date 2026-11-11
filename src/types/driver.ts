@@ -6,6 +6,8 @@ export type Evaluation = {
   obs: string;
   data: string;
   operador: string;
+  /** Número do manifesto informado no modal ao colocar em rota (num_modal) */
+  manifesto?: number;
 };
 
 export type Driver = {
@@ -17,7 +19,10 @@ export type Driver = {
   manifestoData: string;
   status: DriverStatus;
   lockedBy: string | null;
+  manifestoAtual?: number;
   avaliacoes: Evaluation[];
   categoria?: string;
   tipoVeiculo?: string;
 };
+
+export type ResultadoSalvarStatus = { ok: true } | { ok: false; mensagem: string };

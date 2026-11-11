@@ -3,16 +3,18 @@
 
 import type { CategoriaVeiculo, TipoVeiculo } from "../constants/vehicles";
 import type { Theme, View } from "../types/app";
-import type { StatusFilter } from "../types/driver";
+import type { DriverStatus, StatusFilter } from "../types/driver";
 import { useEffect, useRef, useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
 import ListToolbar from "../components/drivers/ListToolbar";
 import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
+import ManifestoModal from "../components/modals/ManifestoModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
+import { listarManifestosEmUso } from "../utils/manifesto";
 import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
@@ -54,6 +56,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [categoryFilter, setCategoryFilter] = useState<CategoriaVeiculo | "all">("all");
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
+  const [manifestoDriverId, setManifestoDriverId] = useState<string | null>(null);
   const initialView = viewFromPath(window.location.pathname);
   const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const previousView = useRef(view);
@@ -65,6 +68,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   } = useResizableWidth();
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
+  const manifestoDriver = drivers.find(d => d.id === manifestoDriverId) ?? null;
 
   useEffect(() => {
     if (previousView.current === view) return;
@@ -74,6 +78,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     setCategoryFilter("all");
     setTypeFilter("all");
     setEvalDriverId(null);
+    setManifestoDriverId(null);
     setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
     closeDetail();
     if (view === "motoristas") resetDrivers();
@@ -97,6 +102,12 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     if (window.location.pathname !== viewPaths[view])
       window.history.replaceState(null, "", viewPaths[view]);
   }, [session.role, view]);
+
+  async function handleChangeStatus(id: string, status: DriverStatus) {
+    const resultado = await changeStatus(id, status);
+    if (!resultado.ok)
+      window.alert(resultado.mensagem);
+  }
 
   function navigateTo(nextView: View) {
     if (nextView === "usuarios" && session.role !== "gerente") {
@@ -177,8 +188,9 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                   <DriverDetail
                     driver={selected}
                     role={session.role}
-                    onChangeStatus={changeStatus}
+                    onChangeStatus={handleChangeStatus}
                     onOpenEvalModal={setEvalDriverId}
+                    onOpenManifestoModal={setManifestoDriverId}
                     onClose={selected ? closeDetail : null}
                   />
                 </div>
@@ -186,6 +198,15 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
               )
             : null}
       </div>
+
+      {manifestoDriver && (
+        <ManifestoModal
+          driver={manifestoDriver}
+          manifestosEmUso={listarManifestosEmUso(drivers, manifestoDriver.id)}
+          onClose={() => setManifestoDriverId(null)}
+          onConfirm={numeroManifesto => changeStatus(manifestoDriver.id, "em_rota", numeroManifesto)}
+        />
+      )}
 
       {evalDriver && (
         <EvalModal

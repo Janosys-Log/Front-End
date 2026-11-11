@@ -5,12 +5,17 @@ import { TIPO_LABEL } from "../constants/vehicles";
 import { apiFetch } from "../services/apiFetch";
 import type { VeiculoDTO } from "../services/importacao.service";
 import { veiculosParaDrivers } from "../services/importacao.service";
-import type { Driver, DriverStatus } from "../types/driver";
+import type { Driver, DriverStatus, ResultadoSalvarStatus } from "../types/driver";
+import { ehNumeroManifestoValido } from "../utils/manifesto";
 
 // manifestoService.ts e importacao.service.ts
 
 const MOTORISTA_URL = "http://localhost:8083";
 const AVALIACAO_URL = "http://localhost:8082";
+
+const STATUS_SALVO: ResultadoSalvarStatus = { ok: true };
+const MENSAGEM_FALHA_AO_SALVAR_STATUS =
+	"Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.";
 
 // Chave onde o auth.service.ts guarda o token no localStorage.
 // Confira com: grep -n "localStorage" src/services/auth.service.ts
@@ -38,6 +43,7 @@ type MotoristaApi = {
 	cpfMotorista?: string;
 	contatoMotorista?: string;
 	status?: string;
+	manifestoAtual?: number | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
 };
@@ -54,6 +60,7 @@ type AvaliacaoApi = {
 	nota: number;
 	feedback: string;
 	dataRegistro: string;
+	numeroManifesto?: number;
 };
 
 async function carregarAvaliacoes(motoristaId: number) {
@@ -63,12 +70,20 @@ async function carregarAvaliacoes(motoristaId: number) {
 	if (!response.ok) throw new Error(`Falha ao carregar avaliações (${response.status})`);
 	const data: unknown = await response.json();
 	if (!Array.isArray(data)) throw new Error("Formato de avaliações inesperado");
-	return (data as AvaliacaoApi[]).map((a) => ({
+	return (data as AvaliacaoApi[])
+		.filter((a) => a.motoristaId === motoristaId)
+		.map((a) => ({
 		nota: a.nota,
 		obs: a.feedback,
 		data: a.dataRegistro?.slice(0, 10) ?? "",
 		operador: "",
+		manifesto: a.numeroManifesto,
 	}));
+}
+
+async function lerMensagemDeErro(resposta: Response): Promise<string> {
+	const corpo: { mensagem?: string } | null = await resposta.json().catch(() => null);
+	return corpo?.mensagem ?? MENSAGEM_FALHA_AO_SALVAR_STATUS;
 }
 
 const STATUS_API: Record<DriverStatus, string> = {
@@ -164,6 +179,7 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		// Sem manifesto = string vazia (o sort já trata como "sem manifesto" e coloca na frente).
 		manifestoData: ultimoManifesto ?? "",
 		status: mapStatus(m.status),
+		manifestoAtual: m.manifestoAtual ?? undefined,
 		lockedBy: null,
 		avaliacoes: [],
 	};
@@ -277,15 +293,16 @@ export function useDrivers(userName: string) {
 		setSelectedId(null);
 	}
 
-	// Grava o status no banco. Retorna true se deu certo.
+	// Grava o status no banco. O manifesto só é enviado ao entrar em rota.
 	async function salvarStatus(
 		id: string,
 		status: DriverStatus,
-	): Promise<boolean> {
+		numeroManifesto?: number,
+	): Promise<ResultadoSalvarStatus> {
 		// Motoristas vindos da importação (ids "imp-...") ainda não existem no banco.
 		if (!/^\d+$/.test(id)) {
 			console.log("[salvarStatus] id não numérico, não grava no banco:", id);
-			return true;
+			return STATUS_SALVO;
 		}
 
 		try {
@@ -295,35 +312,39 @@ export function useDrivers(userName: string) {
 				body: JSON.stringify({
 					motoristaId: Number(id),
 					status: STATUS_API[status],
+					numeroManifesto,
 				}),
 			});
 			console.log("[salvarStatus] resposta", res.status);
-			if (!res.ok) throw new Error(await res.text());
-			return true;
+			if (!res.ok) return { ok: false, mensagem: await lerMensagemDeErro(res) };
+			return STATUS_SALVO;
 		} catch (e) {
 			console.error("Falha ao atualizar status:", e);
-			return false;
+			return { ok: false, mensagem: MENSAGEM_FALHA_AO_SALVAR_STATUS };
 		}
 	}
 
-	async function changeStatus(id: string, status: DriverStatus) {
-		const anterior = drivers.find((d) => d.id === id)?.status;
-		console.log("[changeStatus] chamado", { id, de: anterior, para: status });
+	async function changeStatus(
+		id: string,
+		status: DriverStatus,
+		numeroManifesto?: number,
+	): Promise<ResultadoSalvarStatus> {
+		const motoristaAnterior = drivers.find((d) => d.id === id);
+		console.log("[changeStatus] chamado", { id, de: motoristaAnterior?.status, para: status });
 		// O backend recusa (400) quando o status novo é igual ao atual de quem está Disponível.
-		if (anterior === status) return;
-		setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, status } : d)));
+		if (motoristaAnterior?.status === status) return STATUS_SALVO;
 
-		const ok = await salvarStatus(id, status);
-		if (!ok) {
-			if (anterior) {
-				setDrivers((ds) =>
-					ds.map((d) => (d.id === id ? { ...d, status: anterior } : d)),
-				);
-			}
-			window.alert(
-				"Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.",
+		const manifestoAtual = status === "em_rota" ? numeroManifesto : undefined;
+		setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, status, manifestoAtual } : d)));
+
+		const resultado = await salvarStatus(id, status, numeroManifesto);
+		if (!resultado.ok && motoristaAnterior) {
+			const { status: statusAnterior, manifestoAtual: manifestoAnterior } = motoristaAnterior;
+			setDrivers((ds) =>
+				ds.map((d) => (d.id === id ? { ...d, status: statusAnterior, manifestoAtual: manifestoAnterior } : d)),
 			);
 		}
+		return resultado;
 	}
 
 	function concludeRoute(motoristaId: number, nota: number, feedback: string) {
@@ -333,8 +354,9 @@ export function useDrivers(userName: string) {
 					? {
 							...d,
 							status: "disponivel" as DriverStatus,
+							manifestoAtual: undefined,
 							avaliacoes: [
-								{ nota, obs: feedback, data: TODAY, operador: userName },
+								{ nota, obs: feedback, data: TODAY, operador: userName, manifesto: d.manifestoAtual },
 								...d.avaliacoes,
 							],
 						}
@@ -357,7 +379,7 @@ export function useDrivers(userName: string) {
 			setError("Nota deve ser de 1 a 5");
 			return false;
 		}
-		if (!Number.isInteger(avaliacao.numeroManifesto) || avaliacao.numeroManifesto <= 0) {
+		if (!ehNumeroManifestoValido(avaliacao.numeroManifesto)) {
 			setError("Número do manifesto inválido");
 			return false;
 		}
@@ -392,11 +414,11 @@ export function useDrivers(userName: string) {
 			const atual = drivers.find(
 				(d) => d.id === String(avaliacao.motoristaId),
 			)?.status;
-			const statusOk =
+			const statusSalvo =
 				atual === "disponivel"
-					? true
+					? STATUS_SALVO
 					: await salvarStatus(String(avaliacao.motoristaId), "disponivel");
-			if (!statusOk) {
+			if (!statusSalvo.ok) {
 				window.alert(
 					"A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.",
 				);
