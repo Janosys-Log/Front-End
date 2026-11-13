@@ -1,0 +1,43 @@
+/* src/styles/dashboardPage.css */
+.dash-page {
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.dash-header {
+  margin-bottom: 20px;
+}
+
+.dash-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 480px; /* conteúdo | card à direita */
+  gap: 24px;
+  align-items: start;
+}
+
+.dash-main {
+  min-width: 0;
+}
+
+.dash-side {
+  min-width: 0;
+  position: sticky;
+  top: 24px; /* o card acompanha a rolagem */
+}
+
+/* Telas menores: o card desce para baixo do conteúdo */
+@media (max-width: 1100px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-side {
+    position: static;
+  }
+}

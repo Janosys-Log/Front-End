@@ -1,0 +1,178 @@
+/* src/components/RentabilidadeMediaCard/styles.css */
+.rm-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 540px;
+  padding: 16px 18px 12px;
+  background: #dce8f7;
+  border: 2px solid #1f4e9c;
+  border-radius: 12px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111;
+  cursor: pointer;
+}
+.rm-card *, .rm-card *::before, .rm-card *::after { box-sizing: border-box; }
+
+/* Controles: lado a lado, alinhados à direita, sem sobrepor nada */
+.rm-top {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.rm-seg {
+  display: inline-flex;
+  border: 2px solid #1f4e9c;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.rm-seg button {
+  border: 0;
+  background: #fff;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.rm-seg button.ativo { background: #1f4e9c; color: #fff; }
+
+.rm-mes {
+  appearance: none;
+  border: 1px solid #1f4e9c;
+  border-radius: 6px;
+  background: #5b8fd6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 16px;
+  cursor: pointer;
+}
+
+/* Título: margem negativa removida */
+.rm-header { text-align: center; margin-top: 12px; }
+.rm-header h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #1565c0;
+  letter-spacing: .5px;
+}
+.rm-header small {
+  display: block;
+  margin-top: 4px;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.rm-sub { margin: 14px 0 6px; font-size: 11px; letter-spacing: .3px; }
+.rm-sub.melhores { color: #1f3a7a; }
+.rm-sub.piores { color: #a3201e; }
+
+.rm-linha {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  gap: 8px;
+}
+.rm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.rm-valor { font-size: 18px; }
+.rm-valor.ruim { color: #e02424; }
+.rm-nome {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rm-meta { font-size: 9px; color: #666; }
+.rm-pos-ruim { color: #e02424; font-size: 18px; font-weight: 700; }
+
+.rm-medalha {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  border: 2px solid #fff;
+  margin-bottom: 2px;
+}
+.rm-medalha.m1 { background: #e6b800; }
+.rm-medalha.m2 { background: #9aa0a6; }
+.rm-medalha.m3 { background: #b9773a; }
+.seta { font-size: 8px; }
+.seta.up { color: #1b8f3a; }
+.seta.down { color: #d12b2b; }
+
+/* Gráfico */
+.rm-grafico {
+  position: relative;
+  margin-top: 14px;
+  background: #fff;
+  border: 1px solid #b9c6da;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.rm-grafico svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible; /* evita cortar os rótulos dos pontos */
+}
+.rm-grafico-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.rm-grafico-head span { color: #666; text-align: right; }
+.rm-linha-graf { stroke: #1f3a7a; stroke-width: 2.5; fill: none; }
+.rm-ponto { fill: #fff; stroke: #1f3a7a; stroke-width: 3; }
+.rm-ponto-txt { font-size: 11px; font-weight: 700; fill: #111; }
+.rm-media-linha { stroke: #c0392b; stroke-width: 1; opacity: .6; }
+.rm-media-txt { font-size: 9px; fill: #c0392b; }
+
+.rm-meses {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  margin-top: 6px;
+}
+.rm-meses > * { flex: 1; min-width: 0; }
+.rm-meses b { display: block; font-size: 13px; color: #1f2a55; }
+.rm-meses span { display: block; font-size: 10px; font-weight: 700; margin-top: 2px; }
+
+.rm-cidades {
+  margin: 10px 0 0;
+  padding: 4px 8px;
+  font-size: 10px;
+  color: #2a2a8a;
+  text-align: center;
+  border: 1px solid #c8d3e6;
+  background: #eef3fb;
+  border-radius: 4px;
+}
+
+.rm-rodape { margin: 10px 0 0; text-align: center; font-size: 11px; font-weight: 700; color: #2a2a8a; }
+.rm-erro { color: #b00020; font-size: 12px; text-align: center; }
+.rm-loading { font-size: 12px; text-align: center; color: #555; }
