@@ -4,6 +4,7 @@
 import type { CategoriaVeiculo, TipoVeiculo } from "../constants/vehicles";
 import type { Theme, View } from "../types/app";
 import type { DriverStatus, StatusFilter } from "../types/driver";
+import type { VisaoRanking } from "../types/ranking";
 import { useEffect, useRef, useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
@@ -11,6 +12,7 @@ import ListToolbar from "../components/drivers/ListToolbar";
 import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
 import ManifestoModal from "../components/modals/ManifestoModal";
+import RankingModal from "../components/ranking/RankingModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
@@ -58,6 +60,9 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
   const [manifestoDriverId, setManifestoDriverId] = useState<string | null>(null);
+  const [rankingModalOpen, setRankingModalOpen] = useState(false);
+  const [mesRanking, setMesRanking] = useState<string>("");
+  const [visaoRanking, setVisaoRanking] = useState<VisaoRanking>("GERAL");
   const initialView = viewFromPath(window.location.pathname);
   const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const previousView = useRef(view);
@@ -134,7 +139,13 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         {view === "dashboard"
           ? (
               <div className="app-content">
-                <DashboardPage />
+                <DashboardPage
+                  onOpenRanking={({ mes, ano, regiao }) => {
+                    setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
+                    setVisaoRanking(regiao);
+                    setRankingModalOpen(true);
+                  }}
+                />
               </div>
             )
           : view === "usuarios"
@@ -221,6 +232,17 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           setAvaliacao={setAvaliacao}
           sendAvaliacao={sendAvaliacao}
           error={error}
+        />
+      )}
+
+      {session.role === "gerente" && (
+        <RankingModal
+          isOpen={rankingModalOpen}
+          onClose={() => setRankingModalOpen(false)}
+          mesSelecionado={mesRanking}
+          onChangeMes={setMesRanking}
+          visaoSelecionada={visaoRanking}
+          onChangeVisao={setVisaoRanking}
         />
       )}
     </>
