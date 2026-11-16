@@ -380,6 +380,36 @@ export default function RankingModal({
           </div>
         )}
 
+        {/* Banner/Atalho Explícito para o Ranking de Negativos (US.15) - SEMPRE VISÍVEL */}
+        {onAbrirPaginaNegativos && resumo && (
+          <div className="rk-negativos-alert-banner">
+            <div className="rk-neg-alert-content">
+              <span className="rk-neg-alert-icon">
+                {resumo.totalMotoristasNegativos > 0 ? "⚠️" : "📊"}
+              </span>
+              <span className="rk-neg-alert-text">
+                {resumo.totalMotoristasNegativos > 0 ? (
+                  <>
+                    Foram identificados <strong>{resumo.totalMotoristasNegativos} motoristas</strong> com Rentabilidade Média Negativa neste período.
+                  </>
+                ) : (
+                  <>
+                    Nenhum motorista com rentabilidade média negativa em {formatarMesNome(resumo.mesReferencia)}.
+                  </>
+                )}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="rk-neg-alert-btn"
+              onClick={() => onAbrirPaginaNegativos(resumo.mesReferencia, visaoSelecionada)}
+              title="Acessar o painel exclusivo de motoristas com rentabilidade média negativa (US.15)"
+            >
+              <span>Ver Ranking de Negativos (US.15) →</span>
+            </button>
+          </div>
+        )}
+
         {/* Estados de Carregamento, Erro ou Vazio (Fluxos Alternativos A1 e A2) */}
         {carregando ? (
           <div className="rk-state-box">

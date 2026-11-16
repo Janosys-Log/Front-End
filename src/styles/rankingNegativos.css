@@ -1,0 +1,473 @@
+/* ==========================================================================
+   PÁGINA DE MOTORISTAS COM RENTABILIDADE MÉDIA NEGATIVA - US.15 (Figuras 5 e 6)
+   ========================================================================== */
+
+/* --- Container Principal da Página de Negativos --- */
+.rkn-page-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.25rem 1.75rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Barra superior com botão de voltar (Item 1) */
+.rkn-top-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.rkn-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #ffffff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05);
+}
+
+.rkn-back-btn:hover {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  transform: translateX(-2px);
+}
+
+/* Cabeçalho e Título (Item 1) */
+.rkn-page-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.rkn-page-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #991b1b;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Barra de Controles (Item 2) */
+.rkn-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+  background: #ffffff;
+  padding: 0.65rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+/* Faixa de Resumo (Item 3) */
+.rkn-summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.5rem 1.15rem;
+  margin-bottom: 1rem;
+  font-size: 0.84rem;
+  color: #334155;
+}
+
+.rkn-summary-left strong {
+  color: #0f172a;
+}
+
+.rkn-rt-negative {
+  color: #b91c1c;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+/* --- Tabela de Negativos (Item 4) --- */
+.rkn-table-container {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #f87171;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.05);
+}
+
+.rkn-table-header {
+  display: grid;
+  grid-template-columns: 3.5rem 7.5rem 6.5rem 5.5rem 6rem 1fr 6rem 8rem 2.5rem;
+  background: #f87171;
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid #ef4444;
+}
+
+.rkn-th {
+  padding: 0.55rem 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.rkn-th:last-child {
+  border-right: none;
+}
+
+.rkn-table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.rkn-row {
+  display: grid;
+  grid-template-columns: 3.5rem 7.5rem 6.5rem 5.5rem 6rem 1fr 6rem 8rem 2.5rem;
+  font-size: 0.78rem;
+  border-bottom: 1px solid #fecaca;
+  cursor: pointer;
+  align-items: center;
+  transition: all 0.15s ease-in-out;
+}
+
+.rkn-row:last-child {
+  border-bottom: none;
+}
+
+.rkn-row-even {
+  background-color: #fee2e2;
+}
+
+.rkn-row-odd {
+  background-color: #fef2f2;
+}
+
+.rkn-row:hover {
+  background-color: #fecaca;
+  transform: translateY(-1px);
+}
+
+.rkn-cell {
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rkn-cell-bold {
+  font-weight: 700;
+}
+
+.rkn-text-red {
+  color: #b91c1c;
+}
+
+.rkn-col-pos {
+  font-weight: 700;
+  color: #7f1d1d;
+}
+
+.rkn-col-mot {
+  text-align: left;
+  padding-left: 0.75rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rkn-col-arrow {
+  color: #94a3b8;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.rkn-row:hover .rkn-col-arrow {
+  color: #b91c1c;
+}
+
+.rkn-var-up {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.rkn-var-down {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.rkn-var-neutral {
+  color: #64748b;
+}
+
+/* Dica de rodapé (Item 5) */
+.rkn-table-footer-hint {
+  margin-top: 0.85rem;
+  font-size: 0.76rem;
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+/* Estado de Sucesso / Nenhum negativo */
+.rkn-empty-card {
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.rkn-empty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background-color: #22c55e;
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.rkn-empty-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+  color: #15803d;
+}
+
+.rkn-empty-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+/* --- MODAL DE MANIFESTOS DO MOTORISTA (Figura 6) --- */
+.rk-manifestos-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.rk-manifestos-dialog {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 980px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.85rem 1.25rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.rk-manifestos-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.15s ease-in-out;
+  line-height: 1;
+}
+
+.rk-manifestos-close:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Cabeçalho do Modal (Item 6) */
+.rk-manif-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.rk-manif-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e3a8a;
+}
+
+.rk-manif-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: #475569;
+}
+
+.rk-manif-sep {
+  color: #cbd5e1;
+}
+
+.rk-text-negative {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.rk-text-positive {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.rk-manif-table-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 0.55rem;
+}
+
+/* Tabela de Manifestos */
+.rk-manif-table-wrap {
+  border: 1px solid #f87171;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-manif-header-row {
+  display: grid;
+  grid-template-columns: 6rem 6.5rem 1fr 8.5rem 8.5rem 9rem;
+  background: #f87171;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 1px solid #ef4444;
+}
+
+.rk-mth {
+  padding: 0.45rem 0.35rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.rk-mth:last-child {
+  border-right: none;
+}
+
+.rk-manif-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.rk-manif-row {
+  display: grid;
+  grid-template-columns: 6rem 6.5rem 1fr 8.5rem 8.5rem 9rem;
+  font-size: 0.76rem;
+  border-bottom: 1px solid #fecaca;
+  align-items: center;
+}
+
+.rk-manif-row:last-child {
+  border-bottom: none;
+}
+
+.rk-manif-row-even {
+  background-color: #fee2e2;
+}
+
+.rk-manif-row-odd {
+  background-color: #fef2f2;
+}
+
+.rk-mcell {
+  padding: 0.42rem 0.35rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rk-mcol-dest {
+  text-align: left;
+  padding-left: 0.75rem;
+  font-weight: 500;
+}
+
+.rk-mcol-val {
+  text-align: right;
+  padding-right: 0.85rem;
+  font-weight: 600;
+}
+
+.rk-mcol-rt {
+  font-weight: 700;
+}
+
+.rk-manif-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Rodapé com Estatísticas */
+.rk-manif-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.75rem 0.5rem 0.25rem;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 0.75rem;
+}
+
+.rk-manif-footer-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.rk-manif-footer-item strong {
+  font-size: 0.88rem;
+}
+
+.rk-manif-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}

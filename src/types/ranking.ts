@@ -84,3 +84,65 @@ export interface RankingRentabilidadeResponseDTO {
   graficoGrandeSpVsDemais: GraficoDestinoComparativoDTO;
   mesesDisponiveis: string[];
 }
+
+// US.15 - Tipos de Rentabilidade Negativa
+export interface ResumoNegativosDTO {
+  mesReferencia: string;
+  mesAnterior: string;
+  visao: VisaoRanking;
+  quantidadeMotoristasNegativos: number;
+  totalMotoristasFrota: number;
+  percentualNegativos: number;
+  rtTotalNegativos: number;
+  possuiDadosMes: boolean;
+}
+
+export interface MotoristaNegativoItemDTO {
+  posicao: number;
+  posicaoFormatada: string;
+  motoristaId: number;
+  nomeMotorista: string;
+  cpfMotorista?: string | null;
+  tipoVeiculo: string;
+  subtipoVeiculo: string;
+  subtipoLabel: string;
+  rentabilidadeMedia: number;
+  variacaoMesAnterior: number | null;
+  statusVariacao: string;
+  numeroManifestos: number;
+  manifestosNegativos: number;
+  fracaoManifestosNegativos: string;
+  rentabilidadeTotal: number;
+}
+
+export interface PaginaNegativosResponseDTO {
+  resumo: ResumoNegativosDTO;
+  motoristas: MotoristaNegativoItemDTO[];
+  mesesDisponiveis: string[];
+}
+
+export interface ManifestoItemDetalheDTO {
+  idManifesto: number;
+  numeroManifesto: string;
+  dataManifesto: string;
+  destino: string;
+  freteEmpresa: number;
+  freteMotorista: number;
+  rtManifesto: number;
+}
+
+export interface DetalheMotoristaManifestosResponseDTO {
+  motoristaId: number;
+  nomeMotorista: string;
+  subtipoLabel: string;
+  mesReferencia: string;
+  visao: VisaoRanking;
+  posicao: number;
+  posicaoFormatada: string;
+  rentabilidadeMedia: number;
+  rentabilidadeTotal: number;
+  totalManifestos: number;
+  manifestosNegativos: number;
+  fracaoManifestosNegativos: string;
+  manifestos: ManifestoItemDetalheDTO[];
+}
