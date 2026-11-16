@@ -243,6 +243,36 @@ export default function RankingTable({ itens, onAnalisarNegativos }: Props) {
           <i className="rk-tlegend-swatch rk-swatch-red" /> rentabilidade média negativa
         </span>
       </div>
+
+      {/* Bloco de Ação Explícito para o Ranking de Negativos (US.15) - SEMPRE VISÍVEL */}
+      {onAnalisarNegativos && (
+        <div className="rk-table-negativos-footer-cta">
+          <div className="rk-neg-footer-info">
+            <span className="rk-neg-footer-icon">
+              {itensNegativos.length > 0 ? "⚠️" : "📊"}
+            </span>
+            <span>
+              {itensNegativos.length > 0 ? (
+                <>
+                  <strong>{itensNegativos.length} motorista(s)</strong> com Rentabilidade Média Negativa neste período.
+                </>
+              ) : (
+                <>
+                  Nenhum motorista com rentabilidade média negativa neste período.
+                </>
+              )}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="rk-neg-footer-btn"
+            onClick={onAnalisarNegativos}
+            title="Abrir página com o ranking exclusivo e detalhamento dos motoristas negativos (US.15)"
+          >
+            <span>Ver Ranking de Negativos (US.15) →</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

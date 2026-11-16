@@ -1,4 +1,6 @@
 import type {
+  DetalheMotoristaManifestosResponseDTO,
+  PaginaNegativosResponseDTO,
   RankingRentabilidadeResponseDTO,
   VisaoRanking,
 } from "../types/ranking";
@@ -47,6 +49,61 @@ export async function buscarRankingRentabilidade(
   }
 
   return (await response.json()) as RankingRentabilidadeResponseDTO;
+}
+
+export async function buscarPaginaNegativos(
+  mes?: string,
+  visao: VisaoRanking = "GERAL",
+): Promise<PaginaNegativosResponseDTO> {
+  const params = new URLSearchParams();
+  if (mes) {
+    params.set("mes", mes);
+  }
+  params.set("visao", visao);
+
+  const response = await apiFetch(
+    `${MOTORISTA_URL}/api/rankings/rentabilidade/negativos?${params.toString()}`,
+  );
+
+  if (response.status === 403) {
+    throw new Error("Você não tem permissão para acessar a análise de rentabilidade negativa.");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      "Não foi possível carregar os dados dos motoristas com rentabilidade negativa.",
+    );
+  }
+
+  return (await response.json()) as PaginaNegativosResponseDTO;
+}
+
+export async function buscarManifestosMotoristaNegativo(
+  motoristaId: number,
+  mes?: string,
+  visao: VisaoRanking = "GERAL",
+): Promise<DetalheMotoristaManifestosResponseDTO> {
+  const params = new URLSearchParams();
+  if (mes) {
+    params.set("mes", mes);
+  }
+  params.set("visao", visao);
+
+  const response = await apiFetch(
+    `${MOTORISTA_URL}/api/rankings/rentabilidade/negativos/${motoristaId}/manifestos?${params.toString()}`,
+  );
+
+  if (response.status === 403) {
+    throw new Error("Você não tem permissão para acessar os manifestos deste motorista.");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      "Não foi possível carregar os manifestos do motorista.",
+    );
+  }
+
+  return (await response.json()) as DetalheMotoristaManifestosResponseDTO;
 }
 
 const MESES_EXTENSO: Record<string, string> = {

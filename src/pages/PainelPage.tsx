@@ -18,6 +18,7 @@ import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
 import { listarManifestosEmUso } from "../utils/manifesto";
 import DashboardPage from "./DashboardPage";
+import RentabilidadeNegativaPage from "./RentabilidadeNegativaPage";
 import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
@@ -63,6 +64,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [rankingModalOpen, setRankingModalOpen] = useState(false);
   const [mesRanking, setMesRanking] = useState<string>("");
   const [visaoRanking, setVisaoRanking] = useState<VisaoRanking>("GERAL");
+  const [mostrarNegativos, setMostrarNegativos] = useState(false);
   const initialView = viewFromPath(window.location.pathname);
   const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const previousView = useRef(view);
@@ -119,6 +121,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     if (nextView === "usuarios" && session.role !== "gerente") {
       return;
     }
+    setMostrarNegativos(false);
     setView(nextView);
     window.history.pushState(null, "", viewPaths[nextView]);
   }
@@ -139,13 +142,21 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         {view === "dashboard"
           ? (
               <div className="app-content">
-                <DashboardPage
-                  onOpenRanking={({ mes, ano, regiao }) => {
-                    setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
-                    setVisaoRanking(regiao);
-                    setRankingModalOpen(true);
-                  }}
-                />
+                {mostrarNegativos && session.role === "gerente" ? (
+                  <RentabilidadeNegativaPage
+                    mesInicial={mesRanking}
+                    visaoInicial={visaoRanking}
+                    onVoltarAoDashboard={() => setMostrarNegativos(false)}
+                  />
+                ) : (
+                  <DashboardPage
+                    onOpenRanking={({ mes, ano, regiao }) => {
+                      setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
+                      setVisaoRanking(regiao);
+                      setRankingModalOpen(true);
+                    }}
+                  />
+                )}
               </div>
             )
           : view === "usuarios"
@@ -243,6 +254,12 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           onChangeMes={setMesRanking}
           visaoSelecionada={visaoRanking}
           onChangeVisao={setVisaoRanking}
+          onAbrirPaginaNegativos={(mes, visao) => {
+            setMesRanking(mes);
+            setVisaoRanking(visao);
+            setRankingModalOpen(false);
+            setMostrarNegativos(true);
+          }}
         />
       )}
     </>
