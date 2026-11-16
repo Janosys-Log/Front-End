@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react";
 // src/pages/DashboardPage.tsx
 import RentabilidadeMediaCard from "../components/cardRentabilidade/RentabilidadeMediaCard";
-
+import { MotoristasIndesejados } from "../components/paineis/MorotistasIndesejados";
 import MotoristasEmRota from "../components/paineis/MotoristasEmRota";
 import useUsuario from "../hooks/useUsuario";
 import "../styles/dashboardPage.css";
@@ -26,6 +26,7 @@ export default function DashboardPage({ onOpenRanking }: Props) {
           {session.role === "gerente" && (
             <div className="flex gap-2 w-fit">
               <MotoristasEmRota />
+              <MotoristasIndesejados />
             </div>
           )}
         </section>
