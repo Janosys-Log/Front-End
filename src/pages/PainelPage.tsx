@@ -15,6 +15,7 @@ import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
 import { listarManifestosEmUso } from "../utils/manifesto";
+import DashboardPage from "./DashboardPage";
 import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
@@ -131,7 +132,11 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         />
 
         {view === "dashboard"
-          ? <main className="app-content dashboard-empty" aria-label="Dashboard" />
+          ? (
+              <div className="app-content">
+                <DashboardPage />
+              </div>
+            )
           : view === "usuarios"
           ? (
               <div className="app-content">
