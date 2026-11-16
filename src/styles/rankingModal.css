@@ -1,0 +1,957 @@
+/* ==========================================================================
+   RANKING DE RENTABILIDADE - US.14 (Modal, Tabela, Gráficos e Card Trigger)
+   ========================================================================== */
+
+/* --- Backdrop e Dialog do Modal (Figura 3) --- */
+.rk-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.rk-modal-dialog {
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 1360px;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.75rem 1.25rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: #1e293b;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Botão Fechar (X) */
+.rk-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.15s ease-in-out;
+  line-height: 1;
+}
+
+.rk-modal-close:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Cabeçalho do Modal (Item 1) */
+.rk-modal-header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.rk-modal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #1e40af;
+  text-transform: uppercase;
+}
+
+.rk-modal-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #64748b;
+}
+
+/* --- Barra de Controles e Filtros (Itens 2, 10, 3, 4) --- */
+.rk-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #ffffff;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+/* Seletor de mês em pílula azul (Item 2) */
+.rk-month-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.rk-month-select {
+  appearance: none;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 1.85rem 0.4rem 0.85rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  outline: none;
+  transition: background-color 0.15s;
+}
+
+.rk-month-select:hover {
+  background-color: #1d4ed8;
+}
+
+.rk-month-caret {
+  position: absolute;
+  right: 0.6rem;
+  color: #ffffff;
+  font-size: 0.65rem;
+  pointer-events: none;
+}
+
+/* Radio buttons Geral vs Grande SP (Item 2) */
+.rk-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rk-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rk-radio-label input[type="radio"] {
+  accent-color: #1e40af;
+  width: 0.95rem;
+  height: 0.95rem;
+  cursor: pointer;
+}
+
+/* Dropdowns e Buscas (Itens 10, 3, 4) */
+.rk-filter-select-wrap {
+  display: inline-flex;
+}
+
+.rk-filter-select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #334155;
+  padding: 0.38rem 0.65rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.rk-filter-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.rk-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  min-width: 200px;
+}
+
+.rk-search-icon {
+  position: absolute;
+  left: 0.55rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.rk-search-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  padding: 0.38rem 0.65rem 0.38rem 1.85rem;
+  outline: none;
+  color: #0f172a;
+}
+
+.rk-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* --- Faixa de Resumo do Período (Item 5) --- */
+.rk-summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.rk-summary-item strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.rk-var-up {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.rk-var-down {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.rk-var-neutral {
+  color: #64748b;
+}
+
+/* --- Grid Principal (Tabela à esquerda, Gráficos à direita) --- */
+.rk-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* --- Tabela do Ranking (Itens 8, 11) --- */
+.rk-table-section {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rk-table-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+/* Cabeçalho da Tabela */
+.rk-table-header {
+  display: grid;
+  grid-template-columns: 2.2rem 5.6rem 4.5rem 3.4rem 1fr 4.2rem 4.4rem 5.4rem;
+  background: #60a5fa;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.rk-th {
+  padding: 0.45rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.rk-th:last-child {
+  border-right: none;
+}
+
+.rk-th-sub {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.rk-th-sortable {
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background-color 0.15s;
+}
+
+.rk-th-sortable:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Linhas de Dados da Tabela */
+.rk-table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-row {
+  display: grid;
+  grid-template-columns: 2.2rem 5.6rem 4.5rem 3.4rem 1fr 4.2rem 4.4rem 5.4rem;
+  font-size: 0.74rem;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.1s;
+  align-items: center;
+}
+
+.rk-row:hover {
+  filter: brightness(0.97);
+}
+
+.rk-cell {
+  padding: 0.38rem 0.25rem;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rk-col-mot {
+  text-align: left;
+  padding-left: 0.45rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.rk-col-pos {
+  font-weight: 700;
+  color: #334155;
+}
+
+.rk-col-rm,
+.rk-col-rt {
+  font-weight: 700;
+}
+
+/* Cores das Linhas conforme regras oficiais */
+.rk-row-green {
+  background-color: #dcfce7; /* 3 primeiros */
+}
+
+.rk-row-white {
+  background-color: #ffffff; /* acima da média */
+}
+
+.rk-row-yellow {
+  background-color: #fef9c3; /* abaixo da média da frota */
+}
+
+.rk-row-red {
+  background-color: #fee2e2; /* rentabilidade negativa ou últimos 3 */
+  color: #991b1b;
+}
+
+.rk-row-red .rk-col-mot,
+.rk-row-red .rk-col-pos {
+  color: #991b1b;
+  font-weight: 700;
+}
+
+/* --- Bloco Negativo com Borda e Botão Lateral (Item 11 / Figura 3 e 4) --- */
+.rk-negative-group-wrapper {
+  position: relative;
+  display: flex;
+  border: 2px solid #ef4444;
+  background-color: #fee2e2;
+  margin-top: 1px;
+}
+
+.rk-negative-group-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-negative-group-rows .rk-row {
+  border-bottom: 1px solid #fecaca;
+}
+
+.rk-negative-group-rows .rk-row:last-child {
+  border-bottom: none;
+}
+
+/* Botão lateral vermelho (Item 11) "Clique para análise" */
+.rk-negative-side-tab {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  width: 1.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background-color 0.15s, transform 0.15s;
+  box-shadow: -2px 0 6px rgba(220, 38, 38, 0.3);
+}
+
+.rk-negative-side-tab:hover {
+  background-color: #b91c1c;
+}
+
+/* Legenda inferior da tabela */
+.rk-table-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.45rem 0.75rem;
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  font-size: 0.68rem;
+  color: #475569;
+}
+
+.rk-tlegend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rk-tlegend-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  border: 1px solid #cbd5e1;
+}
+
+.rk-swatch-green {
+  background-color: #86efac;
+}
+
+.rk-swatch-white {
+  background-color: #ffffff;
+}
+
+.rk-swatch-yellow {
+  background-color: #fde047;
+}
+
+.rk-swatch-red {
+  background-color: #fca5a5;
+  border-color: #ef4444;
+}
+
+/* --- Coluna de Gráficos (Itens 6, 7, 9) --- */
+.rk-charts-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rk-chart-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-chart-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Gráfico 1 - Barras Verticais (Item 6) */
+.rk-vchart-wrapper {
+  position: relative;
+  height: 120px;
+  margin-top: 1.15rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: flex-end;
+}
+
+.rk-vchart-avg-line {
+  position: absolute;
+  top: -1.15rem;
+  bottom: 0;
+  width: 2px;
+  border-left: 2px dashed #dc2626;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.rk-avg-badge {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background-color: #dc2626;
+  color: #ffffff;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.rk-vchart-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  border-bottom: 1px solid #cbd5e1;
+  gap: 0.2rem;
+}
+
+.rk-vchart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.rk-vchart-bar-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 85%;
+  justify-content: flex-end;
+}
+
+.rk-vchart-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.15rem;
+}
+
+.rk-vchart-bar {
+  width: 70%;
+  max-width: 26px;
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+}
+
+.rk-vchart-label {
+  font-size: 0.58rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+}
+
+/* Gráfico 2 e 3 - Barras Horizontais (Itens 7 e 9) */
+.rk-hchart-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 1.15rem;
+}
+
+.rk-hchart-avg-line {
+  position: absolute;
+  top: -1.15rem;
+  bottom: 0;
+  width: 2px;
+  border-left: 2px dashed #dc2626;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.rk-hchart-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rk-hchart-row {
+  display: grid;
+  grid-template-columns: 6.2rem 1fr 4.2rem;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+}
+
+.rk-hchart-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.rk-hchart-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rk-hchart-sub {
+  font-size: 0.6rem;
+  color: #64748b;
+}
+
+.rk-hchart-track {
+  background-color: #f1f5f9;
+  border-radius: 3px;
+  height: 14px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.rk-hchart-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.rk-hchart-val {
+  font-weight: 700;
+  color: #0f172a;
+  text-align: right;
+  font-size: 0.74rem;
+}
+
+.rk-hchart-nodata {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: 0.25rem;
+}
+
+/* Cores das Barras dos Gráficos */
+.rk-bar-red {
+  background-color: #ef4444;
+}
+
+.rk-bar-yellow {
+  background-color: #f59e0b;
+}
+
+.rk-bar-blue {
+  background-color: #3b82f6;
+}
+
+/* Rodapés e Legendas dos Gráficos */
+.rk-chart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.45rem;
+  font-size: 0.62rem;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.35rem;
+}
+
+.rk-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rk-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rk-legend-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+}
+
+.rk-chart-note {
+  font-size: 0.6rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.rk-chart-empty {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* Estados da Tabela/Modal */
+.rk-state-box {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.rk-state-error {
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.rk-table-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* --- Card Trigger na aba Dashboard (Figura 2) --- */
+.rk-trigger-card {
+  background: #ffffff;
+  border: 2px solid #93c5fd;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem 1rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+}
+
+.rk-trigger-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.16);
+  transform: translateY(-2px);
+}
+
+.rk-trigger-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.rk-trigger-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1e40af;
+  letter-spacing: 0.03em;
+}
+
+.rk-trigger-subtitle {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #64748b;
+}
+
+.rk-trigger-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rk-Segmented {
+  display: inline-flex;
+  background-color: #e2e8f0;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.rk-seg-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rk-seg-btn.active {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.rk-trigger-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.65rem;
+}
+
+.rk-trigger-group-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.rk-group-best {
+  color: #15803d;
+}
+
+.rk-group-worst {
+  color: #b91c1c;
+}
+
+.rk-trigger-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.rk-podium-item {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.45rem 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.rk-podium-worst {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.rk-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.2rem;
+}
+
+.rk-medal-1 {
+  background-color: #eab308;
+}
+
+.rk-medal-2 {
+  background-color: #94a3b8;
+}
+
+.rk-medal-3 {
+  background-color: #d97706;
+}
+
+.rk-worst-pos {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #dc2626;
+  margin-bottom: 0.2rem;
+}
+
+.rk-podium-rm {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.rk-rm-worst {
+  color: #dc2626;
+}
+
+.rk-podium-var {
+  font-size: 0.65rem;
+  margin: 0.1rem 0;
+}
+
+.rk-podium-name {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.rk-podium-meta {
+  font-size: 0.6rem;
+  color: #64748b;
+}
+
+.rk-trigger-summary-box {
+  background-color: #f1f5f9;
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.65rem;
+}
+
+.rk-trigger-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #334155;
+}
+
+.rk-trigger-summary-head strong {
+  color: #0f172a;
+}
+
+.rk-trigger-cta {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2563eb;
+  padding-top: 0.35rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.rk-trigger-state {
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-style: italic;
+}
