@@ -68,17 +68,11 @@ export function MotoristasIndesejados() {
                       </div>
 
                       <span className="text-xs tabular-nums text-gray-600">
-                        {new Date(motorista.updatedAt).toDateString()}
+                        {motorista.updatedAt.toLocaleDateString()}
                       </span>
 
                       <span className="text-sm font-medium tabular-nums text-gray-600">
-                        {Math.max(
-                          0,
-                          Math.floor(
-                            (Date.now() - new Date(motorista.updatedAt).getTime())
-                            / (1000 * 60 * 60 * 24),
-                          ),
-                        )}
+                        {motorista.diasComIndesejado}
                       </span>
                     </button>
                   ))

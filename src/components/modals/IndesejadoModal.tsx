@@ -29,22 +29,12 @@ export default function IndesejadoModal({
 
   return (
     <Modal
-      title={`Reverter Indesejado · ${motorista.nome} · ${motorista.id} ${motorista.id > 1 ? "dias" : "dia"}`}
+      title={`Reverter Indesejado · ${motorista.nome} · ${motorista.diasComIndesejado} ${motorista.diasComIndesejado > 1 ? "dias" : "dia"}`}
       onClose={onClose}
     >
       <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
         <p className="modal-copy">
-          Remover status
-          {" "}
-          <strong>Indesejado</strong>
-          {" "}
-          do
-          {motorista.nome}
-          {" "}
-          depois de
-          {motorista.id}
-          {" "}
-          dias?
+          Remover status <strong>Indesejado</strong> do {motorista.nome} depois de {motorista.diasComIndesejado} dias?
         </p>
         <div className="modal-actions">
           <button type="button" className="btn-ghost" onClick={onClose}>

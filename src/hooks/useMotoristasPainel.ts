@@ -27,6 +27,7 @@ export type MotoristaEmRota = {
   veiculo: string;
   numeroManifesto: string | null;
   avaliacaoMedia: number;
+  updatedAt: Date;
 };
 
 export type MotoristaIndesejado = {
@@ -34,6 +35,7 @@ export type MotoristaIndesejado = {
   nome: string;
   veiculo: string;
   updatedAt: Date;
+  diasComIndesejado: number;
 };
 
 export default function useMotoristasPainel() {
@@ -63,7 +65,15 @@ export default function useMotoristasPainel() {
         return response.json();
       })
       .then((responseJson: Motorista[]) => {
-        const motoristasEmRota: MotoristaEmRota[] = responseJson.map(m => ({ id: m.idMotorista, nome: m.nomeMotorista, veiculo: m.veiculo.subtipoVeiculo, numeroManifesto: m.manifestoAtual ?? "10000", avaliacaoMedia: m.notaMedia }));
+        const motoristasEmRota: MotoristaEmRota[] = responseJson.map(m => ({
+          id: m.idMotorista,
+          nome: m.nomeMotorista,
+          veiculo: m.veiculo.subtipoVeiculo,
+          numeroManifesto: m.manifestoAtual ?? "10000",
+          avaliacaoMedia: m.notaMedia,
+          updatedAt: new Date(m.statusUpdatedAt),
+        }))
+          .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
         setMotoristasEmRota(motoristasEmRota);
       });
 
@@ -77,7 +87,14 @@ export default function useMotoristasPainel() {
         return response.json();
       })
       .then((responseJson: Motorista[]) => {
-        const motoristasIndesejados: MotoristaIndesejado[] = responseJson.map(m => ({ id: m.idMotorista, nome: m.nomeMotorista, veiculo: m.veiculo.subtipoVeiculo, updatedAt: new Date(m.statusUpdatedAt) }));
+        const motoristasIndesejados: MotoristaIndesejado[] = responseJson.map(m => ({
+          id: m.idMotorista,
+          nome: m.nomeMotorista,
+          veiculo: m.veiculo.subtipoVeiculo,
+          updatedAt: new Date(m.statusUpdatedAt),
+          diasComIndesejado: Math.floor((Date.now() - new Date(m.statusUpdatedAt).getTime()) / (1000 * 60 * 60 * 24)),
+        }))
+          .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
         setMotoristasIndesejados(motoristasIndesejados);
       });
   }
