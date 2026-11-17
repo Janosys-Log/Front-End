@@ -1,7 +1,9 @@
-// src/pages/DashboardPage.tsx
 import type { ComponentProps } from "react";
+// src/pages/DashboardPage.tsx
 import RentabilidadeMediaCard from "../components/cardRentabilidade/RentabilidadeMediaCard";
-
+import MotoristasEmRota from "../components/paineis/MotoristasEmRota";
+import { MotoristasIndesejados } from "../components/paineis/MotoristasIndesejados";
+import useUsuario from "../hooks/useUsuario";
 import "../styles/dashboardPage.css";
 
 type Props = {
@@ -10,6 +12,8 @@ type Props = {
 };
 
 export default function DashboardPage({ onOpenRanking }: Props) {
+  const { session } = useUsuario();
+
   return (
     <main className="dash-page">
       <header className="dash-header">
@@ -18,7 +22,15 @@ export default function DashboardPage({ onOpenRanking }: Props) {
 
       <div className="dash-grid">
         {/* Coluna esquerda: coloque aqui os outros cards/gráficos */}
-        <section className="dash-main" />
+        <section className="dash-main">
+
+          <div className="flex gap-2 w-fit">
+            <MotoristasEmRota />
+            {session.role === "gerente" && (
+              <MotoristasIndesejados />
+            )}
+          </div>
+        </section>
 
         {/* Coluna direita: card de rentabilidade */}
         <aside className="dash-side">
