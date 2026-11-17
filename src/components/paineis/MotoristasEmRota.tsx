@@ -1,19 +1,8 @@
 import type { MotoristaEmRota } from "../../hooks/useMotoristasPainel";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useMotoristasPainel from "../../hooks/useMotoristasPainel";
 import useUsuario from "../../hooks/useUsuario";
 import AvaliacaoModal from "../modals/AvaliacaoModal";
-
-type AvaliacaoResponse = {
-  mensagem: string;
-  id: number;
-  motoristaId: number;
-  nota: number;
-  numeroManifesto: number;
-  descricaoNota: string;
-  feedback: string;
-  dataRegistro: string;
-};
 
 export default function MotoristasEmRota() {
   const { session } = useUsuario();
@@ -37,75 +26,6 @@ export default function MotoristasEmRota() {
     setMotoristaSelecionado(null);
     setAvaliacaoModal(false);
   }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <>
-  useEffect(() => {
-    if (!session.token || motoristas.length === 0)
-      return;
-
-    let ativo = true;
-
-    async function buscarAvaliacoes() {
-      try {
-        const resultados = await Promise.all(
-          motoristas.map(async (motorista) => {
-            const response = await fetch(
-              `http://localhost:8082/api/avaliacoes?motoristaId=${motorista.id}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${session.token}`,
-                },
-              },
-            );
-
-            if (!response.ok) {
-              throw new Error("Erro ao buscar avaliações");
-            }
-
-            const avaliacoes: AvaliacaoResponse[] = await response.json();
-
-            const media
-              = avaliacoes.length > 0
-                ? avaliacoes.reduce(
-                  (soma, avaliacao) => soma + avaliacao.nota,
-                  0,
-                ) / avaliacoes.length
-                : 0;
-
-            return {
-              id: motorista.id,
-              avaliacaoMedia: media,
-            };
-          }),
-        );
-
-        if (!ativo)
-          return;
-
-        setMotoristasEmRota(atuais =>
-          atuais.map((motorista) => {
-            const resultado = resultados.find(r => r.id === motorista.id);
-
-            return resultado
-              ? {
-                  ...motorista,
-                  avaliacaoMedia: resultado.avaliacaoMedia,
-                }
-              : motorista;
-          }),
-        );
-      }
-      catch (error) {
-        console.error("Erro ao buscar avaliações:", error);
-      }
-    }
-
-    buscarAvaliacoes();
-
-    return () => {
-      ativo = false;
-    };
-  }, [motoristas.length, session.token, setMotoristasEmRota]);
 
   return (
     <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm h-fit">

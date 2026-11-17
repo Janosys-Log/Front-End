@@ -38,6 +38,17 @@ export type MotoristaIndesejado = {
   diasComIndesejado: number;
 };
 
+type AvaliacaoResponse = {
+  mensagem: string;
+  id: number;
+  motoristaId: number;
+  nota: number;
+  numeroManifesto: number;
+  descricaoNota: string;
+  feedback: string;
+  dataRegistro: string;
+};
+
 export default function useMotoristasPainel() {
   const { session } = useUsuario();
   const [motoristasEmRota, setMotoristasEmRota] = useState<MotoristaEmRota[]>([]);
@@ -54,8 +65,8 @@ export default function useMotoristasPainel() {
     });
   }
 
-  async function fetchMotoristas() {
-    fetch("http://127.0.0.1:8083/api/motoristas?status=Em_Rota", {
+  async function fetchMotoristasEmRota() {
+    const motoristas = await fetch("http://127.0.0.1:8083/api/motoristas?status=Em_Rota", {
       headers: { Authorization: `Bearer ${session.token}` },
     })
       .then((response) => {
@@ -74,10 +85,13 @@ export default function useMotoristasPainel() {
           updatedAt: new Date(m.statusUpdatedAt),
         }))
           .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
-        setMotoristasEmRota(motoristasEmRota);
+        return motoristasEmRota;
       });
+    return motoristas;
+  }
 
-    fetch("http://127.0.0.1:8083/api/motoristas?status=Indesejado", {
+  async function fetchMotoristasIndesejados() {
+    const motoristas = await fetch("http://127.0.0.1:8083/api/motoristas?status=Indesejado", {
       headers: { Authorization: `Bearer ${session.token}` },
     })
       .then((response) => {
@@ -95,14 +109,86 @@ export default function useMotoristasPainel() {
           diasComIndesejado: Math.floor((Date.now() - new Date(m.statusUpdatedAt).getTime()) / (1000 * 60 * 60 * 24)),
         }))
           .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
-        setMotoristasIndesejados(motoristasIndesejados);
+        return motoristasIndesejados;
       });
+    return motoristas;
+  }
+
+  async function buscarAvaliacoes(motoristas: MotoristaEmRota[]) {
+    try {
+      const resultados = await Promise.all(
+        motoristas.map(async (motorista) => {
+          const response = await fetch(
+            `http://localhost:8082/api/avaliacoes?motoristaId=${motorista.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.token}`,
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Erro ao buscar avaliações");
+          }
+
+          const avaliacoes: AvaliacaoResponse[] = await response.json();
+
+          const media = avaliacoes.length > 0
+            ? avaliacoes.reduce(
+              (soma, avaliacao) => soma + avaliacao.nota,
+              0,
+            ) / avaliacoes.length
+            : 0;
+
+          return {
+            id: motorista.id,
+            avaliacaoMedia: media,
+          };
+        }),
+      );
+
+      const motoristasEmRotaComAvaliacao = motoristas.map((m) => {
+        const resultado = resultados.find(r => r.id === m.id);
+
+        return resultado
+          ? {
+              ...m,
+              avaliacaoMedia: resultado.avaliacaoMedia,
+            }
+          : m;
+      });
+
+      return motoristasEmRotaComAvaliacao;
+    }
+    catch (error) {
+      console.error("Erro ao buscar avaliações:", error);
+    }
+  }
+
+  async function fetchMotoristas() {
+    try {
+      const [motoristasEmRota, motoristasIndesejados] = await Promise.all([
+        fetchMotoristasEmRota(),
+        fetchMotoristasIndesejados(),
+      ]);
+
+      if (motoristasIndesejados.length > 0)
+        setMotoristasIndesejados(motoristasIndesejados);
+
+      if (motoristasEmRota.length === 0)
+        return;
+
+      const motoristasEmRotaComAvaliacao = await buscarAvaliacoes(motoristasEmRota);
+      setMotoristasEmRota(motoristasEmRotaComAvaliacao !== undefined ? motoristasEmRotaComAvaliacao : motoristasEmRota);
+    }
+    catch (error) {
+      console.error("Erro ao buscar motoristas:", error);
+    }
   }
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <fetchMotoristas é uma função>
   useEffect(() => {
     fetchMotoristas();
-  // eslint-disable-next-line react/exhaustive-deps
   }, []);
 
   return { motoristasEmRota, motoristasIndesejados, setMotoristasEmRota, setMotoristasIndesejados, disponibilizaMotorista };
