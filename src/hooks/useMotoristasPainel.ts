@@ -140,9 +140,11 @@ export default function useMotoristasPainel() {
             ) / avaliacoes.length
             : 0;
 
+          const mediaFormatada = Number(media.toFixed(2));
+
           return {
             id: motorista.id,
-            avaliacaoMedia: media,
+            avaliacaoMedia: mediaFormatada,
           };
         }),
       );

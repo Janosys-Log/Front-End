@@ -41,12 +41,16 @@ export default function MotoristasEmRota() {
       </header>
 
       <div className="overflow-x-auto">
-        <div className="min-w-120">
-          <div className="grid grid-cols-[36px_minmax(0,1fr)_100px_105px] gap-2 bg-gray-50 px-3 py-3 text-xs font-semibold uppercase text-gray-500">
+        <div
+          className={`${session.role === "gerente" ? "min-w-120" : "min-w-100"}`}
+        >
+          <div
+            className={`grid ${session.role === "gerente" ? "grid-cols-[36px_minmax(0,1fr)_100px_105px]" : "grid-cols-[36px_minmax(0,1fr)_100px]"} gap-2 bg-gray-50 px-3 py-3 text-xs font-semibold uppercase text-gray-500`}
+          >
             <span>#</span>
             <span>Motorista</span>
             <span>Manifesto</span>
-            <span>Pontuação</span>
+            {session.role === "gerente" && <span>Pontuação</span>}
           </div>
 
           <div className="max-h-85 min-h-45 divide-y divide-gray-100 overflow-y-auto">
@@ -57,7 +61,7 @@ export default function MotoristasEmRota() {
                       key={motorista.id}
                       type="button"
                       onClick={() => adicionaMotoristaSelecionado(motorista)}
-                      className="grid w-full grid-cols-[36px_minmax(0,1fr)_100px_105px] items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                      className={`grid w-full ${session.role === "gerente" ? "grid-cols-[36px_minmax(0,1fr)_100px_105px]" : "grid-cols-[36px_minmax(0,1fr)_100px]"} items-center gap-2 px-3 py-3 text-left transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500`}
                     >
                       <span className="text-sm text-gray-500">{index + 1}</span>
 
@@ -70,13 +74,15 @@ export default function MotoristasEmRota() {
                         </span>
                       </div>
 
-                      <span className="text-sm tabular-nums text-gray-600">
+                      <span className="text-sm tabular-nums text-gray-600 text-center">
                         {motorista.numeroManifesto || "Null"}
                       </span>
 
-                      <span className="text-xs font-semibold text-gray-600">
-                        {motorista.avaliacaoMedia}
-                      </span>
+                      {session.role === "gerente" && (
+                        <span className="text-xs font-semibold text-gray-600 text-center">
+                          {motorista.avaliacaoMedia}
+                        </span>
+                      )}
                     </button>
                   ))
                 )
