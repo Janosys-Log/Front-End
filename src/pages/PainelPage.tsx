@@ -10,6 +10,7 @@ import DriverList from "../components/drivers/DriverList";
 import ListToolbar from "../components/drivers/ListToolbar";
 import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
+import PainelEmRota from "../components/dashboard/PainelEmRota";
 import ManifestoModal from "../components/modals/ManifestoModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
@@ -37,6 +38,8 @@ function viewFromPath(pathname: string): View {
 
 export default function PainelPage({ theme, onToggleTheme }: Props) {
   const { session, logout } = useUsuario();
+  const initialView = viewFromPath(window.location.pathname);
+  const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const {
     drivers,
     sortedDrivers,
@@ -50,15 +53,16 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     setAvaliacao,
     sendAvaliacao,
     error,
-  } = useDrivers(session.userName);
+    loading,
+    loadFailed,
+    reload,
+  } = useDrivers(session.userName, view === "dashboard" && session.role === "operador");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoriaVeiculo | "all">("all");
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
   const [manifestoDriverId, setManifestoDriverId] = useState<string | null>(null);
-  const initialView = viewFromPath(window.location.pathname);
-  const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const previousView = useRef(view);
   const {
     width: listWidth,
@@ -109,6 +113,12 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
       window.alert(resultado.mensagem);
   }
 
+  async function handleDashboardEvaluation() {
+    const saved = await sendAvaliacao();
+    if (saved) await reload();
+    return saved;
+  }
+
   function navigateTo(nextView: View) {
     if (nextView === "usuarios" && session.role !== "gerente") {
       return;
@@ -131,7 +141,18 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         />
 
         {view === "dashboard"
-          ? <main className="app-content dashboard-empty" aria-label="Dashboard" />
+          ? session.role === "operador"
+            ? (
+                <main className="app-content dashboard-route-page" aria-label="Dashboard do operador">
+                  <PainelEmRota
+                    drivers={sortedDrivers}
+                    loading={loading}
+                    loadFailed={loadFailed}
+                    onSelect={driver => setEvalDriverId(driver.id)}
+                  />
+                </main>
+              )
+            : <main className="app-content dashboard-empty" aria-label="Dashboard" />
           : view === "usuarios"
           ? (
               <div className="app-content">
@@ -214,7 +235,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           onClose={() => setEvalDriverId(null)}
           avaliacao={avaliacao}
           setAvaliacao={setAvaliacao}
-          sendAvaliacao={sendAvaliacao}
+          sendAvaliacao={view === "dashboard" ? handleDashboardEvaluation : sendAvaliacao}
           error={error}
         />
       )}
