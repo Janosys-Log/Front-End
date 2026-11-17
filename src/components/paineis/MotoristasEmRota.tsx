@@ -24,6 +24,8 @@ export default function MotoristasEmRota() {
     = useState<MotoristaEmRota | null>();
 
   function adicionaMotoristaSelecionado(motorista: MotoristaEmRota) {
+    if (session.role !== "gerente")
+      return;
     setMotoristaSelecionado(motorista);
     setAvaliacaoModal(true);
   }
@@ -36,6 +38,7 @@ export default function MotoristasEmRota() {
     setAvaliacaoModal(false);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <>
   useEffect(() => {
     if (!session.token || motoristas.length === 0)
       return;

@@ -23,12 +23,13 @@ export default function DashboardPage({ onOpenRanking }: Props) {
       <div className="dash-grid">
         {/* Coluna esquerda: coloque aqui os outros cards/gráficos */}
         <section className="dash-main">
-          {session.role === "gerente" && (
-            <div className="flex gap-2 w-fit">
-              <MotoristasEmRota />
+
+          <div className="flex gap-2 w-fit">
+            <MotoristasEmRota />
+            {session.role === "gerente" && (
               <MotoristasIndesejados />
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         {/* Coluna direita: card de rentabilidade */}
