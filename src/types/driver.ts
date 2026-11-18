@@ -23,6 +23,8 @@ export type Driver = {
   avaliacoes: Evaluation[];
   categoria?: string;
   tipoVeiculo?: string;
+  notaMedia?: number;
+  statusUpdatedAt?: string;
 };
 
 export type ResultadoSalvarStatus = { ok: true } | { ok: false; mensagem: string };

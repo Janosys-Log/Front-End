@@ -43,6 +43,7 @@ type MotoristaApi = {
 	cpfMotorista?: string;
 	contatoMotorista?: string;
 	status?: string;
+	statusUpdatedAt?: string | number[] | null;
 	manifestoAtual?: number | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
@@ -182,6 +183,8 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		manifestoAtual: m.manifestoAtual ?? undefined,
 		lockedBy: null,
 		avaliacoes: [],
+		notaMedia: m.notaMedia ?? undefined,
+		statusUpdatedAt: normalizarData(m.statusUpdatedAt),
 	};
 }
 
