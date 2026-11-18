@@ -150,8 +150,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                   />
                 ) : (
                   <DashboardPage
-                    drivers={drivers}
-                    onChangeStatus={changeStatus}
                     onOpenRanking={({ mes, ano, regiao }) => {
                       setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
                       setVisaoRanking(regiao);
