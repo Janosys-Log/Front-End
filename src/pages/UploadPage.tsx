@@ -40,21 +40,36 @@ export function UploadPage() {
     setErro(null);
   }
 
-  async function enviar() {
-    const mensagem = validarArquivos(arqVeiculos, arqManifestos);
-    if (mensagem || !arqVeiculos || !arqManifestos) {
-      setErro(mensagem);
+  async function enviar(tipo: 'todos' | 'veiculos' | 'manifestos' = 'todos') {
+    const vParaEnviar = tipo === 'todos' || tipo === 'veiculos' ? arqVeiculos : null;
+    const mParaEnviar = tipo === 'todos' || tipo === 'manifestos' ? arqManifestos : null;
+
+    const mensagem = validarArquivos(vParaEnviar, mParaEnviar);
+    if (mensagem || (!vParaEnviar && !mParaEnviar)) {
+      setErro(
+        tipo === 'veiculos'
+          ? 'Selecione o arquivo CSV de veículos primeiro.'
+          : tipo === 'manifestos'
+            ? 'Selecione o arquivo CSV de manifestos primeiro.'
+            : (mensagem ?? 'Selecione ao menos um arquivo CSV para importar.')
+      );
       return;
     }
 
     setErro(null);
     setEnviando(true);
     try {
-      const resultado = await importarCsvs(arqVeiculos, arqManifestos);
-      setResVeiculos(resultado.veiculos);
-      setResManifestos(resultado.manifestos);
-      // Depois de importar, busca de novo a data no backend.
-      setDataImportacao(await buscarDataUltimaImportacao());
+      const resultado = await importarCsvs(vParaEnviar, mParaEnviar);
+      if (resultado.veiculos) {
+        setResVeiculos(resultado.veiculos);
+      }
+      if (resultado.manifestos) {
+        setResManifestos(resultado.manifestos);
+      }
+      // Se importou manifestos, atualiza a data no backend
+      if (resultado.manifestos) {
+        setDataImportacao(await buscarDataUltimaImportacao());
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível importar os arquivos. Tente novamente.');
     } finally {
@@ -67,7 +82,7 @@ export function UploadPage() {
       <header className="upload-page__cabecalho">
         <h1 className="upload-page__titulo">Importação de arquivos</h1>
         <p className="upload-page__descricao">
-          Escolha o CSV de veículos e o de manifestos. Os dois são enviados juntos.
+          Escolha o CSV de veículos, o de manifestos ou ambos para importar de forma independente ou conjunta.
         </p>
       </header>
 
@@ -81,6 +96,8 @@ export function UploadPage() {
           resultadoManifestos={resManifestos}
           enviando={enviando}
           ultimaImportacao={dataImportacao}
+          onImportarVeiculos={() => enviar('veiculos')}
+          onImportarManifestos={() => enviar('manifestos')}
         />
 
         <div className="upload-page__acoes">
@@ -93,11 +110,17 @@ export function UploadPage() {
           <button
             type="button"
             className="upload-page__enviar"
-            onClick={enviar}
-            disabled={enviando}
+            onClick={() => enviar('todos')}
+            disabled={enviando || (!arqVeiculos && !arqManifestos)}
           >
             {enviando ? (
               <><Loader2 size={16} className="painel-upload-card__spin" /> Importando…</>
+            ) : arqVeiculos && arqManifestos ? (
+              'Importar ambos os arquivos'
+            ) : arqVeiculos ? (
+              'Importar veículos'
+            ) : arqManifestos ? (
+              'Importar manifestos'
             ) : (
               'Importar arquivos'
             )}

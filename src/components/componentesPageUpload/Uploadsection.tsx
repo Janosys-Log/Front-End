@@ -11,8 +11,10 @@ type UploadSectionProps = {
   resultadoVeiculos: ResultadoImportacao | null;
   resultadoManifestos: ResultadoImportacao | null;
   enviando: boolean;
-  /** Data da última importação (a mesma para os dois, já que são enviados juntos) */
+  /** Data da última importação */
   ultimaImportacao?: string | Date | null;
+  onImportarVeiculos?: () => void;
+  onImportarManifestos?: () => void;
 };
 
 export function UploadSection({
@@ -24,6 +26,8 @@ export function UploadSection({
   resultadoManifestos,
   enviando,
   ultimaImportacao,
+  onImportarVeiculos,
+  onImportarManifestos,
 }: UploadSectionProps) {
   return (
     <div className="painel-upload-section">
@@ -36,9 +40,12 @@ export function UploadSection({
         resultado={resultadoVeiculos}
         enviando={enviando}
         ultimaImportacao={ultimaImportacao}
+        onImportar={onImportarVeiculos}
       />
 
-      <span className="painel-upload-section__seta" aria-hidden="true">+</span>
+      <span className="painel-upload-section__seta" aria-hidden="true">
+        e/ou
+      </span>
 
       <UploadCard
         titulo="MANIFESTOS"
@@ -49,6 +56,7 @@ export function UploadSection({
         resultado={resultadoManifestos}
         enviando={enviando}
         ultimaImportacao={ultimaImportacao}
+        onImportar={onImportarManifestos}
       />
     </div>
   );

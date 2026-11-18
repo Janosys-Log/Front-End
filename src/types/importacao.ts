@@ -8,8 +8,8 @@ export type ResultadoImportacao<T = unknown> = {
   invalidos: ErroLinha[];
 };
 
-/** Resposta única do back: um resultado para cada CSV */
+/** Resposta do back: um resultado para cada CSV (pode ser null se o arquivo não foi enviado) */
 export type ResultadoImportacaoDupla<TVeiculo = unknown, TManifesto = unknown> = {
-  veiculos: ResultadoImportacao<TVeiculo>;
-  manifestos: ResultadoImportacao<TManifesto>;
+  veiculos: ResultadoImportacao<TVeiculo> | null;
+  manifestos: ResultadoImportacao<TManifesto> | null;
 };

@@ -16,10 +16,12 @@ type UploadCardProps = {
   onSelecionar: (arquivo: File | null) => void;
   /** Resultado deste CSV depois do envio. null = ainda não enviado */
   resultado: ResultadoImportacao | null;
-  /** true enquanto a página está enviando os dois arquivos */
+  /** true enquanto a página está enviando */
   enviando: boolean;
   /** Data da última importação (ISO string ou Date). null = nunca importado */
   ultimaImportacao?: string | Date | null;
+  /** Ação opcional para importar individualmente este card */
+  onImportar?: () => void;
 };
 
 function formatarData(valor?: string | Date | null) {
@@ -38,6 +40,7 @@ export function UploadCard({
   resultado,
   enviando,
   ultimaImportacao,
+  onImportar,
 }: UploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [arrastando, setArrastando] = useState(false);
@@ -133,14 +136,37 @@ export function UploadCard({
           </button>
         )}
 
-        <button
-          type="button"
-          className="painel-upload-card__botao"
-          onClick={() => inputRef.current?.click()}
-          disabled={enviando}
-        >
-          {arquivo ? 'Trocar Arquivo' : 'Selecionar Arquivo'}
-        </button>
+        <div className="painel-upload-card__acoes-arquivo">
+          <button
+            type="button"
+            className="painel-upload-card__botao"
+            onClick={() => inputRef.current?.click()}
+            disabled={enviando}
+          >
+            {arquivo ? 'Trocar Arquivo' : 'Selecionar Arquivo'}
+          </button>
+
+          {arquivo && !enviando && (
+            <button
+              type="button"
+              className="painel-upload-card__botao painel-upload-card__botao--remover"
+              onClick={() => onSelecionar(null)}
+              title="Remover este arquivo"
+            >
+              Remover
+            </button>
+          )}
+
+          {arquivo && onImportar && !enviando && (
+            <button
+              type="button"
+              className="painel-upload-card__botao painel-upload-card__botao--importar"
+              onClick={onImportar}
+            >
+              Importar {titulo.toLowerCase()}
+            </button>
+          )}
+        </div>
 
         <input
           ref={inputRef}
