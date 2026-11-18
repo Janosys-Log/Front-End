@@ -36,7 +36,7 @@ export default function RentabilidadeMediaCard({ onOpenRanking, onChangeMes }: P
   useEffect(() => {
     if (ano !== null)
       onChangeMes?.(`${ano}-${String(mes).padStart(2, "0")}`);
-  }, [ano, mes, onChangeMes]);
+  }, [ano, mes]);
 
   const { ranking, serie, loading, erro } = useRentabilidadeMedia(ano, mes, regiao);
 
