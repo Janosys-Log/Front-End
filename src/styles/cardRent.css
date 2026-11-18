@@ -58,6 +58,10 @@
   padding: 6px 18px;
   cursor: pointer;
 }
+.rm-mes.rm-mes-badge {
+  cursor: default;
+  user-select: none;
+}
 
 /* Título: margem negativa removida */
 .rm-header { text-align: center; margin-top: 14px; }

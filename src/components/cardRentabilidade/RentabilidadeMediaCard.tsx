@@ -20,20 +20,33 @@ type Props = {
   onOpenRanking?: (ctx: { mes: number; ano: number; regiao: Regiao }) => void;
   /** Avisa o pai quando o mês/ano do card mudam (formato AAAA-MM). */
   onChangeMes?: (mes: string) => void;
+  mes?: number;
+  ano?: number | null;
+  showSelector?: boolean;
 };
 
-export default function RentabilidadeMediaCard({ onOpenRanking, onChangeMes }: Props) {
-  const [ano, setAno] = useState<number | null>(null);
-  const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
+export default function RentabilidadeMediaCard({
+  onOpenRanking,
+  onChangeMes,
+  mes: mesProp,
+  ano: anoProp,
+  showSelector = true,
+}: Props) {
+  const [internalAno, setInternalAno] = useState<number | null>(null);
+  const [internalMes, setInternalMes] = useState<number>(new Date().getMonth() + 1);
   const [regiao, setRegiao] = useState<Regiao>("GERAL");
+
+  const ano = anoProp !== undefined ? anoProp : internalAno;
+  const mes = mesProp !== undefined ? mesProp : internalMes;
 
   // mês/ano iniciais = data do último manifesto
   useEffect(() => {
+    if (anoProp !== undefined && mesProp !== undefined) return;
     buscarDataUltimoManifesto().then((d) => {
-      setAno(d.getFullYear());
-      setMes(d.getMonth() + 1);
+      setInternalAno(d.getFullYear());
+      setInternalMes(d.getMonth() + 1);
     });
-  }, []);
+  }, [anoProp, mesProp]);
 
   useEffect(() => {
     if (ano !== null)
@@ -69,18 +82,24 @@ export default function RentabilidadeMediaCard({ onOpenRanking, onChangeMes }: P
             Grande SP
           </button>
         </div>
-        <select
-          className="rm-mes"
-          value={mes}
-          onClick={parar}
-          onChange={e => setMes(Number(e.target.value))}
-        >
-          {MESES.map((nome, i) => (
-            <option key={nome} value={i + 1}>
-              {nome.toUpperCase()}
-            </option>
-          ))}
-        </select>
+        {showSelector ? (
+          <select
+            className="rm-mes"
+            value={mes}
+            onClick={parar}
+            onChange={e => setInternalMes(Number(e.target.value))}
+          >
+            {MESES.map((nome, i) => (
+              <option key={nome} value={i + 1}>
+                {nome.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="rm-mes rm-mes-badge" onClick={parar}>
+            {MESES[mes - 1]?.toUpperCase()}
+          </span>
+        )}
       </div>
 
       <header className="rm-header">
