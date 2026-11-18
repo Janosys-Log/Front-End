@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RANKING DE RENTABILIDADE - US.14 (Modal, Tabela, Gráficos e Card Trigger)
+   RANKING DE RENTABILIDADE (Modal, Tabela, Gráficos e Card Trigger)
    ========================================================================== */
 
 /* --- Backdrop e Dialog do Modal (Figura 3) --- */
@@ -1034,7 +1034,7 @@
   font-style: italic;
 }
 
-/* Banner de Alerta Explícito no Modal do Ranking Geral (US.14 -> US.15) */
+/* Banner de Alerta Explícito no Modal do Ranking Geral */
 .rk-negativos-alert-banner {
   display: flex;
   align-items: center;

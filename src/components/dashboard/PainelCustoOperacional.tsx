@@ -111,10 +111,6 @@ export default function PainelCustoOperacional({
           </select>
           <span className="pco-month-caret">▼</span>
         </div>
-
-        <span className="pco-month-note">
-          (segue o seletor do card de rentabilidade, US 13)
-        </span>
       </div>
 
       {erro && (

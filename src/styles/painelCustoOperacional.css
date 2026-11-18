@@ -56,12 +56,6 @@
   pointer-events: none;
 }
 
-.pco-month-note {
-  font-size: 0.82rem;
-  font-style: italic;
-  color: #64748b;
-}
-
 /* Card Principal de Custo Operacional (Item 2) */
 .pco-card-custo {
   display: grid;

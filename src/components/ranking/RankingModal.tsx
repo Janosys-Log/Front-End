@@ -420,7 +420,7 @@ export default function RankingModal({
           </div>
         )}
 
-        {/* Banner/Atalho Explícito para o Ranking de Negativos (US.15) */}
+        {/* Banner/Atalho Explícito para o Ranking de Negativos */}
         {resumo && (
           <div className="rk-negativos-alert-banner">
             <div className="rk-neg-alert-content">
@@ -446,9 +446,9 @@ export default function RankingModal({
                 onAbrirPaginaNegativos?.(resumo.mesReferencia, visaoSelecionada);
                 setAbaAtiva("negativos");
               }}
-              title="Acessar o painel exclusivo de motoristas com rentabilidade média negativa (US.15)"
+              title="Acessar o painel exclusivo de motoristas com rentabilidade média negativa"
             >
-              <span>Ver Ranking de Negativos (US.15) →</span>
+              <span>Ver Ranking de Negativos →</span>
             </button>
           </div>
         )}

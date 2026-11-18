@@ -85,7 +85,7 @@ export interface RankingRentabilidadeResponseDTO {
   mesesDisponiveis: string[];
 }
 
-// US.15 - Tipos de Rentabilidade Negativa
+// Tipos de Rentabilidade Negativa
 export interface ResumoNegativosDTO {
   mesReferencia: string;
   mesAnterior: string;
