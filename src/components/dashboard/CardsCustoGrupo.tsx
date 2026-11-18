@@ -30,7 +30,6 @@ export default function CardsCustoGrupo({ mes, mesNum, ano, onMudarPeriodo }: Pr
 
   const mesAtualSelecionado = mesNum ?? (mes ? Number(mes.split("-")[1]) : new Date().getMonth() + 1);
   const anoAtualSelecionado = ano ?? (mes ? Number(mes.split("-")[0]) : anoAtual);
-
   useEffect(() => {
     if (!ehGerente)
       return;
