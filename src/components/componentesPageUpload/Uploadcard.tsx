@@ -1,5 +1,5 @@
 import type { ChangeEvent, DragEvent, ReactNode } from 'react';
-import type { ResultadoImportacao } from '../../types/importacao';
+import type { ResultadoImportacao, InfoUltimaImportacao } from '../../types/importacao';
 import type { CsvKind } from './csvInfo';
 import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -18,17 +18,67 @@ type UploadCardProps = {
   resultado: ResultadoImportacao | null;
   /** true enquanto a página está enviando */
   enviando: boolean;
-  /** Data da última importação (ISO string ou Date). null = nunca importado */
-  ultimaImportacao?: string | Date | null;
+  /** Data / info da última importação. null = nunca importado */
+  ultimaImportacao?: string | Date | InfoUltimaImportacao | null;
   /** Ação opcional para importar individualmente este card */
   onImportar?: () => void;
 };
 
-function formatarData(valor?: string | Date | null) {
-  if (!valor) return '—';
-  const d = new Date(valor);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('pt-BR');
+function extrairInfoImportacao(valor?: string | Date | InfoUltimaImportacao | null): {
+  textoDataHora: string;
+  nomeArquivo?: string;
+  temValor: boolean;
+} {
+  if (!valor) return { textoDataHora: '—', temValor: false };
+  if (typeof valor === 'string') {
+    const d = new Date(valor);
+    return {
+      textoDataHora: Number.isNaN(d.getTime()) ? valor : d.toLocaleDateString('pt-BR'),
+      temValor: true,
+    };
+  }
+  if (valor instanceof Date) {
+    return {
+      textoDataHora: valor.toLocaleDateString('pt-BR'),
+      temValor: true,
+    };
+  }
+
+  let dataFormatada = '';
+  if (valor.data) {
+    const [y, m, d] = valor.data.slice(0, 10).split('-').map(Number);
+    if (y && m && d) {
+      dataFormatada = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+    } else {
+      dataFormatada = valor.data;
+    }
+  } else if (valor.dataHora) {
+    const dt = new Date(valor.dataHora);
+    if (!Number.isNaN(dt.getTime())) {
+      dataFormatada = dt.toLocaleDateString('pt-BR');
+    }
+  }
+
+  let horaFormatada = '';
+  if (valor.hora) {
+    horaFormatada = valor.hora.slice(0, 5);
+  } else if (valor.dataHora) {
+    const dt = new Date(valor.dataHora);
+    if (!Number.isNaN(dt.getTime())) {
+      horaFormatada = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
+  const texto =
+    dataFormatada && horaFormatada
+      ? `${dataFormatada} às ${horaFormatada}`
+      : dataFormatada || horaFormatada || '—';
+
+  return {
+    textoDataHora: texto,
+    nomeArquivo: valor.nomeArquivo,
+    temValor: Boolean(dataFormatada || horaFormatada || valor.nomeArquivo),
+  };
 }
 
 export function UploadCard({
@@ -81,6 +131,8 @@ export function UploadCard({
       : resultado
         ? 'success'
         : 'idle';
+
+  const infoImport = extrairInfoImportacao(ultimaImportacao);
 
   return (
     <section className="painel-upload-card">
@@ -192,10 +244,17 @@ export function UploadCard({
       </div>
 
       <footer className="painel-upload-card__rodape">
-        <span>data da última importação</span>
+        <div className="painel-upload-card__rodape-col">
+          <span className="painel-upload-card__rodape-label">data da última importação</span>
+          {infoImport.nomeArquivo && (
+            <span className="painel-upload-card__arquivo-ultimo" title={infoImport.nomeArquivo}>
+              <FileSpreadsheet size={13} /> {infoImport.nomeArquivo}
+            </span>
+          )}
+        </div>
         <span className="painel-upload-card__data">
-          {formatarData(ultimaImportacao)}
-          {ultimaImportacao && (
+          {infoImport.textoDataHora}
+          {infoImport.temValor && (
             <CheckCircle2 size={16} className="painel-upload-card__check" aria-label="Importado" />
           )}
         </span>

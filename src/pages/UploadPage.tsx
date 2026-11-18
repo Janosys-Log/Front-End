@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { ResultadoImportacao } from '../types/importacao';
+import type { ResultadoImportacao, InfoUltimaImportacao } from '../types/importacao';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { UploadSection } from '../components/componentesPageUpload/Uploadsection';
 import { importarCsvs, validarArquivos } from '../services/importacao.service';
-import { buscarDataUltimaImportacao } from '../services/manifestoService';
+import { buscarUltimaImportacao } from '../services/manifestoService';
 import '../styles/uploadPage.css';
 import '../styles/Uploadpageacoes.css';
 
@@ -12,16 +12,26 @@ export function UploadPage() {
   const [arqManifestos, setArqManifestos] = useState<File | null>(null);
   const [resVeiculos, setResVeiculos] = useState<ResultadoImportacao | null>(null);
   const [resManifestos, setResManifestos] = useState<ResultadoImportacao | null>(null);
-  const [dataImportacao, setDataImportacao] = useState<Date | null>(null);
+  const [importacaoVeiculos, setImportacaoVeiculos] = useState<InfoUltimaImportacao | null>(null);
+  const [importacaoManifestos, setImportacaoManifestos] = useState<InfoUltimaImportacao | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // A data vem do backend (/api/manifestos/dataDoUltimoManifesto), não do relógio do navegador.
+  // Busca os dados da última importação no backend
   useEffect(() => {
     let ativo = true;
-    buscarDataUltimaImportacao().then(data => {
-      if (ativo) setDataImportacao(data);
-    });
+    async function carregarMetadados() {
+      const [veic, manif, geral] = await Promise.all([
+        buscarUltimaImportacao('veiculos'),
+        buscarUltimaImportacao('manifestos'),
+        buscarUltimaImportacao(),
+      ]);
+      if (ativo) {
+        setImportacaoVeiculos(veic ?? geral);
+        setImportacaoManifestos(manif ?? geral);
+      }
+    }
+    carregarMetadados();
     return () => {
       ativo = false;
     };
@@ -60,16 +70,39 @@ export function UploadPage() {
     setEnviando(true);
     try {
       const resultado = await importarCsvs(vParaEnviar, mParaEnviar);
+      const agora = new Date();
+      const horaStr = agora.toLocaleTimeString('pt-BR');
+      const dataStr = agora.toISOString().slice(0, 10);
+
       if (resultado.veiculos) {
         setResVeiculos(resultado.veiculos);
+        setImportacaoVeiculos({
+          data: dataStr,
+          hora: horaStr,
+          dataHora: agora.toISOString(),
+          nomeArquivo: vParaEnviar?.name || resultado.veiculos.nomeArquivo || 'veiculos.csv',
+          tipoArquivo: 'VEICULOS',
+        });
       }
+
       if (resultado.manifestos) {
         setResManifestos(resultado.manifestos);
+        setImportacaoManifestos({
+          data: dataStr,
+          hora: horaStr,
+          dataHora: agora.toISOString(),
+          nomeArquivo: mParaEnviar?.name || resultado.manifestos.nomeArquivo || 'manifestos.csv',
+          tipoArquivo: 'MANIFESTOS',
+        });
       }
-      // Se importou manifestos, atualiza a data no backend
-      if (resultado.manifestos) {
-        setDataImportacao(await buscarDataUltimaImportacao());
-      }
+
+      // Re-sincroniza com o backend
+      const [novoVeic, novoManif] = await Promise.all([
+        buscarUltimaImportacao('veiculos'),
+        buscarUltimaImportacao('manifestos'),
+      ]);
+      if (novoVeic) setImportacaoVeiculos(novoVeic);
+      if (novoManif) setImportacaoManifestos(novoManif);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível importar os arquivos. Tente novamente.');
     } finally {
@@ -95,7 +128,8 @@ export function UploadPage() {
           resultadoVeiculos={resVeiculos}
           resultadoManifestos={resManifestos}
           enviando={enviando}
-          ultimaImportacao={dataImportacao}
+          ultimaImportacaoVeiculos={importacaoVeiculos}
+          ultimaImportacaoManifestos={importacaoManifestos}
           onImportarVeiculos={() => enviar('veiculos')}
           onImportarManifestos={() => enviar('manifestos')}
         />

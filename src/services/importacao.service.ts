@@ -81,6 +81,8 @@ function normalizeResultado<T>(
   return {
     validos: validos.map(normalizeItem),
     invalidos: invalidos.map(normalizeErro),
+    nomeArquivo: raw?.nomeArquivo ? String(raw.nomeArquivo) : undefined,
+    dataHora: raw?.dataHora ? String(raw.dataHora) : undefined,
   };
 }
 

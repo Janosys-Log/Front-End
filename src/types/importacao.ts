@@ -6,6 +6,16 @@ export type ErroLinha = {
 export type ResultadoImportacao<T = unknown> = {
   validos: T[];
   invalidos: ErroLinha[];
+  nomeArquivo?: string;
+  dataHora?: string;
+};
+
+export type InfoUltimaImportacao = {
+  data: string;
+  hora?: string;
+  dataHora?: string;
+  nomeArquivo?: string;
+  tipoArquivo?: string;
 };
 
 /** Resposta do back: um resultado para cada CSV (pode ser null se o arquivo não foi enviado) */

@@ -133,16 +133,47 @@
 .painel-upload-card__rodape {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 12px;
   font-size: 0.8rem;
   color: var(--upload-texto-suave);
+  padding-top: 10px;
+  border-top: 1px solid var(--upload-borda);
+}
+
+.painel-upload-card__rodape-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.painel-upload-card__rodape-label {
+  font-size: 0.75rem;
+  text-transform: lowercase;
+  color: var(--upload-texto-suave);
+}
+
+.painel-upload-card__arquivo-ultimo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--upload-destaque);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
 }
 
 .painel-upload-card__data {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .painel-upload-card__check {

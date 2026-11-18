@@ -1,4 +1,4 @@
-import type { ResultadoImportacao } from '../../types/importacao';
+import type { ResultadoImportacao, InfoUltimaImportacao } from '../../types/importacao';
 import { ListChecks, Truck } from 'lucide-react';
 import { UploadCard } from './Uploadcard';
 import '../../styles/painelUploadSection.css';
@@ -11,8 +11,10 @@ type UploadSectionProps = {
   resultadoVeiculos: ResultadoImportacao | null;
   resultadoManifestos: ResultadoImportacao | null;
   enviando: boolean;
-  /** Data da última importação */
-  ultimaImportacao?: string | Date | null;
+  /** Data / info da última importação */
+  ultimaImportacao?: string | Date | InfoUltimaImportacao | null;
+  ultimaImportacaoVeiculos?: string | Date | InfoUltimaImportacao | null;
+  ultimaImportacaoManifestos?: string | Date | InfoUltimaImportacao | null;
   onImportarVeiculos?: () => void;
   onImportarManifestos?: () => void;
 };
@@ -26,6 +28,8 @@ export function UploadSection({
   resultadoManifestos,
   enviando,
   ultimaImportacao,
+  ultimaImportacaoVeiculos,
+  ultimaImportacaoManifestos,
   onImportarVeiculos,
   onImportarManifestos,
 }: UploadSectionProps) {
@@ -39,7 +43,7 @@ export function UploadSection({
         onSelecionar={onSelecionarVeiculos}
         resultado={resultadoVeiculos}
         enviando={enviando}
-        ultimaImportacao={ultimaImportacao}
+        ultimaImportacao={ultimaImportacaoVeiculos ?? ultimaImportacao}
         onImportar={onImportarVeiculos}
       />
 
@@ -55,7 +59,7 @@ export function UploadSection({
         onSelecionar={onSelecionarManifestos}
         resultado={resultadoManifestos}
         enviando={enviando}
-        ultimaImportacao={ultimaImportacao}
+        ultimaImportacao={ultimaImportacaoManifestos ?? ultimaImportacao}
         onImportar={onImportarManifestos}
       />
     </div>
