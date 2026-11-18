@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { CIDADES_GRANDE_SP, MESES } from "../../constants/grandeSp";
 import { useRentabilidadeMedia } from "../../hooks/useRentabilidadeMedia";
 import { buscarDataUltimoManifesto } from "../../services/rentabilidadeService";
-import CardsCustoGrupo from "../components/dashboard/CardsCustoGrupo";
 
 import "../../styles/cardRent.css";
 
