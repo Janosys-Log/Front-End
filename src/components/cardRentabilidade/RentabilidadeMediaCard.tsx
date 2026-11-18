@@ -171,9 +171,9 @@ function MelhorItem({ m, pos }: { m: MotoristaRanking; pos: number }) {
 }
 
 function Grafico({ serie }: { serie: PontoMensal[] }) {
-  const W = 500;
-  const H = 130;
-  const PAD_X = 26;
+  const W = 540;
+  const H = 140;
+  const PAD_X = 28;
   const PAD_Y = 24;
 
   const { pontos, media, min } = useMemo(() => {
