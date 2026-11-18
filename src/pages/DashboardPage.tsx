@@ -1,6 +1,8 @@
 import type { ComponentProps } from "react";
 // src/pages/DashboardPage.tsx
+import { useState } from "react";
 import RentabilidadeMediaCard from "../components/cardRentabilidade/RentabilidadeMediaCard";
+import CardsCustoGrupo from "../components/dashboard/CardsCustoGrupo";
 import MotoristasEmRota from "../components/paineis/MotoristasEmRota";
 import { MotoristasIndesejados } from "../components/paineis/MotoristasIndesejados";
 import useUsuario from "../hooks/useUsuario";
@@ -13,6 +15,7 @@ type Props = {
 
 export default function DashboardPage({ onOpenRanking }: Props) {
   const { session } = useUsuario();
+  const [mesCards, setMesCards] = useState("");
 
   return (
     <main className="dash-page">
@@ -30,11 +33,13 @@ export default function DashboardPage({ onOpenRanking }: Props) {
               <MotoristasIndesejados />
             )}
           </div>
+
+          <CardsCustoGrupo mes={mesCards} />
         </section>
 
         {/* Coluna direita: card de rentabilidade */}
         <aside className="dash-side">
-          <RentabilidadeMediaCard onOpenRanking={onOpenRanking} />
+          <RentabilidadeMediaCard onOpenRanking={onOpenRanking} onChangeMes={setMesCards} />
         </aside>
       </div>
     </main>
