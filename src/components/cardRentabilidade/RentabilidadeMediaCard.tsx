@@ -1,10 +1,13 @@
 // src/components/RentabilidadeMediaCard/index.tsx
 import type { MotoristaRanking, PontoMensal, Regiao } from "../../types/rentabilidade";
+
+
 import { useEffect, useMemo, useState } from "react";
 
 import { CIDADES_GRANDE_SP, MESES } from "../../constants/grandeSp";
 import { useRentabilidadeMedia } from "../../hooks/useRentabilidadeMedia";
 import { buscarDataUltimoManifesto } from "../../services/rentabilidadeService";
+import CardsCustoGrupo from "../components/dashboard/CardsCustoGrupo";
 
 import "../../styles/cardRent.css";
 
@@ -16,9 +19,11 @@ const num = (v: number) => v.toLocaleString("pt-BR");
 type Props = {
   /** Chamado ao clicar no card (abrir o ranking completo). */
   onOpenRanking?: (ctx: { mes: number; ano: number; regiao: Regiao }) => void;
+  /** Avisa o pai quando o mês/ano do card mudam (formato AAAA-MM). */
+  onChangeMes?: (mes: string) => void;
 };
 
-export default function RentabilidadeMediaCard({ onOpenRanking }: Props) {
+export default function RentabilidadeMediaCard({ onOpenRanking, onChangeMes }: Props) {
   const [ano, setAno] = useState<number | null>(null);
   const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
   const [regiao, setRegiao] = useState<Regiao>("GERAL");
@@ -30,6 +35,11 @@ export default function RentabilidadeMediaCard({ onOpenRanking }: Props) {
       setMes(d.getMonth() + 1);
     });
   }, []);
+
+  useEffect(() => {
+    if (ano !== null)
+      onChangeMes?.(`${ano}-${String(mes).padStart(2, "0")}`);
+  }, [ano, mes]);
 
   const { ranking, serie, loading, erro } = useRentabilidadeMedia(ano, mes, regiao);
 
