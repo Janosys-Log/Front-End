@@ -16,40 +16,27 @@ const num = (v: number) => v.toLocaleString("pt-BR");
 type Props = {
   /** Chamado ao clicar no card (abrir o ranking completo). */
   onOpenRanking?: (ctx: { mes: number; ano: number; regiao: Regiao }) => void;
-  mes?: number;
-  ano?: number | null;
-  onMudarMes?: (mes: number) => void;
+  /** Avisa o pai quando o mês/ano do card mudam (formato AAAA-MM). */
+  onChangeMes?: (mes: string) => void;
 };
 
-export default function RentabilidadeMediaCard({
-  onOpenRanking,
-  mes: mesProp,
-  ano: anoProp,
-  onMudarMes,
-}: Props) {
-  const [internalAno, setInternalAno] = useState<number | null>(null);
-  const [internalMes, setInternalMes] = useState<number>(new Date().getMonth() + 1);
+export default function RentabilidadeMediaCard({ onOpenRanking, onChangeMes }: Props) {
+  const [ano, setAno] = useState<number | null>(null);
+  const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
   const [regiao, setRegiao] = useState<Regiao>("GERAL");
-
-  const ano = anoProp !== undefined ? anoProp : internalAno;
-  const mes = mesProp !== undefined ? mesProp : internalMes;
 
   // mês/ano iniciais = data do último manifesto
   useEffect(() => {
-    if (anoProp !== undefined && mesProp !== undefined) return;
     buscarDataUltimoManifesto().then((d) => {
-      setInternalAno(d.getFullYear());
-      setInternalMes(d.getMonth() + 1);
+      setAno(d.getFullYear());
+      setMes(d.getMonth() + 1);
     });
-  }, [anoProp, mesProp]);
+  }, []);
 
-  function handleMudarMes(novoMes: number) {
-    if (onMudarMes) {
-      onMudarMes(novoMes);
-    } else {
-      setInternalMes(novoMes);
-    }
-  }
+  useEffect(() => {
+    if (ano !== null)
+      onChangeMes?.(`${ano}-${String(mes).padStart(2, "0")}`);
+  }, [ano, mes, onChangeMes]);
 
   const { ranking, serie, loading, erro } = useRentabilidadeMedia(ano, mes, regiao);
 
@@ -84,7 +71,7 @@ export default function RentabilidadeMediaCard({
           className="rm-mes"
           value={mes}
           onClick={parar}
-          onChange={e => handleMudarMes(Number(e.target.value))}
+          onChange={e => setMes(Number(e.target.value))}
         >
           {MESES.map((nome, i) => (
             <option key={nome} value={i + 1}>
