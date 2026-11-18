@@ -147,20 +147,21 @@
 }
 .rm-grafico-head span { color: #666; text-align: right; }
 .rm-linha-graf { stroke: #1f3a7a; stroke-width: 2.5; fill: none; }
-.rm-ponto { fill: #fff; stroke: #1f3a7a; stroke-width: 3; }
-.rm-ponto-txt { font-size: 11px; font-weight: 700; fill: #111; }
+.rm-ponto { fill: #fff; stroke: #1f3a7a; stroke-width: 2.5; }
+.rm-ponto-txt { font-size: 8.5px; font-weight: 700; fill: #111; }
 .rm-media-linha { stroke: #c0392b; stroke-width: 1; opacity: .6; }
 .rm-media-txt { font-size: 9px; fill: #c0392b; }
 
 .rm-meses {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   text-align: center;
   margin-top: 6px;
+  gap: 2px;
 }
 .rm-meses > * { flex: 1; min-width: 0; }
-.rm-meses b { display: block; font-size: 13px; color: #1f2a55; }
-.rm-meses span { display: block; font-size: 10px; font-weight: 700; margin-top: 2px; }
+.rm-meses b { display: block; font-size: 10px; color: #1f2a55; }
+.rm-meses span { display: block; font-size: 8.5px; font-weight: 600; margin-top: 1px; color: #64748b; }
 
 .rm-cidades {
   margin: 10px 0 0;

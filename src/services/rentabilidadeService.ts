@@ -87,7 +87,7 @@ export async function buscarSerieMensal(
   ano: number,
   mes: number,
   regiao: Regiao,
-  qtdMeses = 5
+  qtdMeses = 12
 ): Promise<PontoMensal[]> {
   const meses: { mes: number; ano: number }[] = [];
   for (let i = qtdMeses - 1; i >= 0; i--) {

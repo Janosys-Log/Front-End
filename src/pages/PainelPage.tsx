@@ -254,12 +254,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           onChangeMes={setMesRanking}
           visaoSelecionada={visaoRanking}
           onChangeVisao={setVisaoRanking}
-          onAbrirPaginaNegativos={(mes, visao) => {
-            setMesRanking(mes);
-            setVisaoRanking(visao);
-            setRankingModalOpen(false);
-            setMostrarNegativos(true);
-          }}
         />
       )}
     </>

@@ -151,10 +151,10 @@ function MelhorItem({ m, pos }: { m: MotoristaRanking; pos: number }) {
 }
 
 function Grafico({ serie }: { serie: PontoMensal[] }) {
-  const W = 440;
-  const H = 120;
-  const PAD_X = 50;
-  const PAD_Y = 28;
+  const W = 500;
+  const H = 130;
+  const PAD_X = 26;
+  const PAD_Y = 24;
 
   const { pontos, media, min } = useMemo(() => {
     if (!serie.length)
@@ -184,16 +184,31 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
         / ((Math.max(...serie.map(s => s.rentabilidadeMedia)) - min) || 1))
       * (H - PAD_Y * 2);
 
+  const formatoValorPonto = (val: number) => {
+    if (serie.length > 6) {
+      return num(Math.round(val));
+    }
+    return num(Number(val.toFixed(2))).replace(/^(\d+)$/, "$1,00");
+  };
+
+  const formatoManifestos = (qtd: number) => {
+    if (qtd <= 0) return "—";
+    if (serie.length > 6 && qtd >= 1000) {
+      return `${(qtd / 1000).toFixed(1)}k`;
+    }
+    return num(qtd);
+  };
+
   return (
     <div className="rm-grafico">
       <div className="rm-grafico-head">
-        <b>Média da frota (R$ por manifesto)</b>
-        <span>manif. = manifestos emitidos no mês</span>
+        <b>Média da frota nos últimos 12 meses (R$ por manifesto)</b>
+        <span>manif. = emitidos</span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Média da frota por mês">
-        <line x1={PAD_X - 20} x2={W - PAD_X + 20} y1={yMedia} y2={yMedia} className="rm-media-linha" />
-        <text x={W - 6} y={yMedia - 3} textAnchor="end" className="rm-media-txt">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Média da frota por mês nos últimos 12 meses">
+        <line x1={PAD_X - 14} x2={W - PAD_X + 14} y1={yMedia} y2={yMedia} className="rm-media-linha" />
+        <text x={W - 4} y={yMedia - 3} textAnchor="end" className="rm-media-txt">
           {brl(media)}
         </text>
 
@@ -206,9 +221,10 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
           const abaixo = p.rentabilidadeMedia === min;
           return (
             <g key={`${p.ano}-${p.mes}`}>
-              <circle cx={p.x} cy={p.y} r={5} className="rm-ponto" />
-              <text x={p.x} y={abaixo ? p.y + 18 : p.y - 10} textAnchor="middle" className="rm-ponto-txt">
-                {num(Number(p.rentabilidadeMedia.toFixed(2))).replace(/^(\d+)$/, "$1,00")}
+              <title>{`${p.label}/${p.ano}: ${brl(p.rentabilidadeMedia)} (${num(p.manifestos)} manifestos)`}</title>
+              <circle cx={p.x} cy={p.y} r={serie.length > 6 ? 3.5 : 5} className="rm-ponto" />
+              <text x={p.x} y={abaixo ? p.y + 14 : p.y - 8} textAnchor="middle" className="rm-ponto-txt">
+                {formatoValorPonto(p.rentabilidadeMedia)}
               </text>
             </g>
           );
@@ -217,13 +233,9 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
 
       <div className="rm-meses">
         {serie.map(s => (
-          <div key={`${s.ano}-${s.mes}`}>
+          <div key={`${s.ano}-${s.mes}`} title={`${s.label}/${s.ano}: ${num(s.manifestos)} manifestos`}>
             <b>{s.label}</b>
-            <span>
-              {num(s.manifestos)}
-              {" "}
-              manif.
-            </span>
+            <span>{formatoManifestos(s.manifestos)}</span>
           </div>
         ))}
       </div>

@@ -16,6 +16,9 @@ interface Props {
   mesInicial?: string;
   visaoInicial?: VisaoRanking;
   onVoltarAoDashboard: () => void;
+  textoBotaoVoltar?: string;
+  onChangeMes?: (novoMes: string) => void;
+  onChangeVisao?: (novaVisao: VisaoRanking) => void;
 }
 
 const CATEGORIAS_FILTRO = [
@@ -44,10 +47,21 @@ export default function RentabilidadeNegativaPage({
   mesInicial = "",
   visaoInicial = "GERAL",
   onVoltarAoDashboard,
+  textoBotaoVoltar,
+  onChangeMes,
+  onChangeVisao,
 }: Props) {
   const [mesSelecionado, setMesSelecionado] = useState<string>(mesInicial);
   const [visaoSelecionada, setVisaoSelecionada] =
     useState<VisaoRanking>(visaoInicial);
+
+  useEffect(() => {
+    if (mesInicial) setMesSelecionado(mesInicial);
+  }, [mesInicial]);
+
+  useEffect(() => {
+    if (visaoInicial) setVisaoSelecionada(visaoInicial);
+  }, [visaoInicial]);
 
   const [dados, setDados] = useState<PaginaNegativosResponseDTO | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -153,9 +167,9 @@ export default function RentabilidadeNegativaPage({
           type="button"
           className="rkn-back-btn"
           onClick={onVoltarAoDashboard}
-          title="Retornar ao Dashboard"
+          title={textoBotaoVoltar ?? "Retornar ao Dashboard"}
         >
-          ← Voltar ao Dashboard
+          {textoBotaoVoltar ?? "← Voltar ao Dashboard"}
         </button>
       </div>
 
@@ -174,7 +188,10 @@ export default function RentabilidadeNegativaPage({
             aria-label="Selecionar mês de referência"
             className="rk-month-select"
             value={resumo?.mesReferencia ?? mesSelecionado}
-            onChange={e => setMesSelecionado(e.target.value)}
+            onChange={e => {
+              setMesSelecionado(e.target.value);
+              onChangeMes?.(e.target.value);
+            }}
           >
             {mesesOpcoes.map((m: string) => (
               <option key={m} value={m}>
@@ -192,7 +209,10 @@ export default function RentabilidadeNegativaPage({
               type="radio"
               name="rkn-visao"
               checked={visaoSelecionada === "GERAL"}
-              onChange={() => setVisaoSelecionada("GERAL")}
+              onChange={() => {
+                setVisaoSelecionada("GERAL");
+                onChangeVisao?.("GERAL");
+              }}
             />
             <span className="rk-radio-custom" />
             <span className="rk-radio-text">Rentabilidade Geral</span>
@@ -203,7 +223,10 @@ export default function RentabilidadeNegativaPage({
               type="radio"
               name="rkn-visao"
               checked={visaoSelecionada === "GRANDE_SP"}
-              onChange={() => setVisaoSelecionada("GRANDE_SP")}
+              onChange={() => {
+                setVisaoSelecionada("GRANDE_SP");
+                onChangeVisao?.("GRANDE_SP");
+              }}
             />
             <span className="rk-radio-custom" />
             <span className="rk-radio-text">Rentabilidade Grande SP</span>
