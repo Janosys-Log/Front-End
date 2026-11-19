@@ -44,6 +44,7 @@ type MotoristaApi = {
 	contatoMotorista?: string;
 	status?: string;
 	manifestoAtual?: number | null;
+	statusUpdatedAt?: string | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
 };
@@ -180,12 +181,13 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		manifestoData: ultimoManifesto ?? "",
 		status: mapStatus(m.status),
 		manifestoAtual: m.manifestoAtual ?? undefined,
+		statusUpdatedAt: m.statusUpdatedAt ?? undefined,
 		lockedBy: null,
 		avaliacoes: [],
 	};
 }
 
-export function useDrivers(userName: string) {
+export function useDrivers(userName: string, onlyEmRota = false) {
 	const [drivers, setDrivers] = useState<Driver[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [avaliacao, setAvaliacao] = useState<Avaliacao>({
@@ -196,14 +198,16 @@ export function useDrivers(userName: string) {
 	});
 	const [error, setError] = useState<string>("");
 	const [loading, setLoading] = useState(true);
+	const [loadFailed, setLoadFailed] = useState(false);
 
 	const loadFromApi = useCallback(async () => {
 		setLoading(true);
+		setLoadFailed(false);
 		try {
 			const [resMot, resMan] = await Promise.all([
-				apiFetch(`${MOTORISTA_URL}/api/motoristas`),
+				apiFetch(`${MOTORISTA_URL}/api/motoristas${onlyEmRota ? "?status=Em_Rota" : ""}`),
 				// Se manifestos falhar, a lista de motoristas ainda carrega.
-				apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
+				onlyEmRota ? Promise.resolve(null) : apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
 			]);
 			if (resMot.status === 401)
 				throw new Error("Sessão expirada. Faça login novamente.");
@@ -225,10 +229,12 @@ export function useDrivers(userName: string) {
 			const driversComAvaliacoes = await Promise.all(
 				motoristas.map(async (m) => {
 					const driver = mapMotorista(m, ultimoPorMotorista.get(m.idMotorista));
-					try {
-						driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
-					} catch (e) {
-						console.error(`Falha ao carregar avaliações do motorista ${m.idMotorista}:`, e);
+					if (!onlyEmRota) {
+						try {
+							driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
+						} catch (e) {
+							console.error(`Falha ao carregar avaliações do motorista ${m.idMotorista}:`, e);
+						}
 					}
 					return driver;
 				}),
@@ -236,11 +242,12 @@ export function useDrivers(userName: string) {
 			setDrivers(driversComAvaliacoes);
 		} catch (e) {
 			setDrivers([]);
+			setLoadFailed(true);
 			console.error("Falha ao carregar motoristas da API:", e);
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [onlyEmRota]);
 
 	useEffect(() => {
 		loadFromApi();
@@ -464,6 +471,7 @@ export function useDrivers(userName: string) {
 		sendAvaliacao,
 		error,
 		loading,
+		loadFailed,
 		reload: loadFromApi,
 	};
 }
