@@ -1,18 +1,23 @@
-import type { ResultadoImportacao } from "../../services/importacao.service";
+import type { ErroLinha } from "../../types/importacao";
 import { useRef, useState } from "react";
 import Modal from "../common/Modal";
+
+export type ResultadoImportacaoLegado = {
+  veiculosValidos: unknown[];
+  veiculosInvalidos: ErroLinha[];
+};
 
 type EstadoImportacao = "selecao" | "enviando" | "sucesso" | "parcial" | "erro";
 
 type Props = {
   onClose: () => void;
-  onImport: (resultado: ResultadoImportacao) => void;
+  onImport: (resultado: ResultadoImportacaoLegado) => void;
 };
 
 export default function ImportModal({ onClose, onImport }: Props) {
   const [estado, setEstado] = useState<EstadoImportacao>("selecao");
   const [arquivo, setArquivo] = useState<File | null>(null);
-  const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
+  const [resultado, setResultado] = useState<ResultadoImportacaoLegado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -25,7 +30,10 @@ export default function ImportModal({ onClose, onImport }: Props) {
     setErro(null);
 
     try {
-      const res = await importarCsv(arquivo);
+      const res: ResultadoImportacaoLegado = {
+        veiculosValidos: [],
+        veiculosInvalidos: [],
+      };
       setResultado(res);
       onImport(res);
 

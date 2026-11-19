@@ -4,6 +4,7 @@
 import type { CategoriaVeiculo, TipoVeiculo } from "../constants/vehicles";
 import type { Theme, View } from "../types/app";
 import type { DriverStatus, StatusFilter } from "../types/driver";
+import type { VisaoRanking } from "../types/ranking";
 import { useEffect, useRef, useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
@@ -12,10 +13,13 @@ import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
 import PainelEmRota from "../components/dashboard/PainelEmRota";
 import ManifestoModal from "../components/modals/ManifestoModal";
+import RankingModal from "../components/ranking/RankingModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
 import { listarManifestosEmUso } from "../utils/manifesto";
+import DashboardPage from "./DashboardPage";
+import RentabilidadeNegativaPage from "./RentabilidadeNegativaPage";
 import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
@@ -63,6 +67,10 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
   const [manifestoDriverId, setManifestoDriverId] = useState<string | null>(null);
+  const [rankingModalOpen, setRankingModalOpen] = useState(false);
+  const [mesRanking, setMesRanking] = useState<string>("");
+  const [visaoRanking, setVisaoRanking] = useState<VisaoRanking>("GERAL");
+  const [mostrarNegativos, setMostrarNegativos] = useState(false);
   const previousView = useRef(view);
   const {
     width: listWidth,
@@ -123,6 +131,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     if (nextView === "usuarios" && session.role !== "gerente") {
       return;
     }
+    setMostrarNegativos(false);
     setView(nextView);
     window.history.pushState(null, "", viewPaths[nextView]);
   }
@@ -152,7 +161,25 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                   />
                 </main>
               )
-            : <main className="app-content dashboard-empty" aria-label="Dashboard" />
+            : (
+                <div className="app-content">
+                  {mostrarNegativos && session.role === "gerente" ? (
+                    <RentabilidadeNegativaPage
+                      mesInicial={mesRanking}
+                      visaoInicial={visaoRanking}
+                      onVoltarAoDashboard={() => setMostrarNegativos(false)}
+                    />
+                  ) : (
+                    <DashboardPage
+                      onOpenRanking={({ mes, ano, regiao }) => {
+                        setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
+                        setVisaoRanking(regiao);
+                        setRankingModalOpen(true);
+                      }}
+                    />
+                  )}
+                </div>
+              )
           : view === "usuarios"
           ? (
               <div className="app-content">
@@ -237,6 +264,23 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           setAvaliacao={setAvaliacao}
           sendAvaliacao={view === "dashboard" ? handleDashboardEvaluation : sendAvaliacao}
           error={error}
+        />
+      )}
+
+      {session.role === "gerente" && (
+        <RankingModal
+          isOpen={rankingModalOpen}
+          onClose={() => setRankingModalOpen(false)}
+          mesSelecionado={mesRanking}
+          onChangeMes={setMesRanking}
+          visaoSelecionada={visaoRanking}
+          onChangeVisao={setVisaoRanking}
+          onAbrirPaginaNegativos={(mes, visao) => {
+            setMesRanking(mes);
+            setVisaoRanking(visao);
+            setRankingModalOpen(false);
+            setMostrarNegativos(true);
+          }}
         />
       )}
     </>
