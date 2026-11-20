@@ -20,6 +20,7 @@ export type Driver = {
   status: DriverStatus;
   lockedBy: string | null;
   manifestoAtual?: number;
+  statusUpdatedAt?: string;
   avaliacoes: Evaluation[];
   categoria?: string;
   tipoVeiculo?: string;
