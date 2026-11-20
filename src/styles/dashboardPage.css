@@ -16,8 +16,8 @@
 
 .dash-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 480px; /* conteúdo | card à direita */
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(540px, 680px); /* conteúdo | card à direita ampliado */
+  gap: 28px;
   align-items: start;
 }
 

@@ -28,6 +28,24 @@ type Avaliacao = {
 	feedback: string;
 };
 
+type ContatoMotoristaApi = {
+	motoristaId: number;
+	email: string;
+	nome: string;
+	expiraEm: string;
+};
+
+function resolverLockedBy(
+	contato: ContatoMotoristaApi | undefined,
+	userEmail?: string,
+): string | null {
+	if (!contato) return null;
+	if (userEmail && contato.email.toLowerCase() === userEmail.toLowerCase()) {
+		return "Você";
+	}
+	return contato.nome || contato.email;
+}
+
 // Veiculo.java -> vem aninhado dentro de Motorista
 type VeiculoApi = {
 	idVeiculo: number;
@@ -43,8 +61,8 @@ type MotoristaApi = {
 	cpfMotorista?: string;
 	contatoMotorista?: string;
 	status?: string;
+	statusUpdatedAt?: string | number[] | null;
 	manifestoAtual?: number | null;
-	statusUpdatedAt?: string | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
 };
@@ -181,13 +199,14 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		manifestoData: ultimoManifesto ?? "",
 		status: mapStatus(m.status),
 		manifestoAtual: m.manifestoAtual ?? undefined,
-		statusUpdatedAt: m.statusUpdatedAt ?? undefined,
 		lockedBy: null,
 		avaliacoes: [],
+		notaMedia: m.notaMedia ?? undefined,
+		statusUpdatedAt: normalizarData(m.statusUpdatedAt),
 	};
 }
 
-export function useDrivers(userName: string, onlyEmRota = false) {
+export function useDrivers(userName: string, onlyEmRota = false, userEmail?: string) {
 	const [drivers, setDrivers] = useState<Driver[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [avaliacao, setAvaliacao] = useState<Avaliacao>({
@@ -204,10 +223,11 @@ export function useDrivers(userName: string, onlyEmRota = false) {
 		setLoading(true);
 		setLoadFailed(false);
 		try {
-			const [resMot, resMan] = await Promise.all([
+			const [resMot, resMan, resContatos] = await Promise.all([
 				apiFetch(`${MOTORISTA_URL}/api/motoristas${onlyEmRota ? "?status=Em_Rota" : ""}`),
 				// Se manifestos falhar, a lista de motoristas ainda carrega.
 				onlyEmRota ? Promise.resolve(null) : apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
+				onlyEmRota ? Promise.resolve(null) : apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos`).catch(() => null),
 			]);
 			if (resMot.status === 401)
 				throw new Error("Sessão expirada. Faça login novamente.");
@@ -224,11 +244,20 @@ export function useDrivers(userName: string, onlyEmRota = false) {
 			}
 			const ultimoPorMotorista = ultimoManifestoPorMotorista(manifestos);
 
+			let contatosMap: Record<string, ContatoMotoristaApi> = {};
+			if (resContatos?.ok) {
+				const ct: unknown = await resContatos.json();
+				if (ct && typeof ct === "object") {
+					contatosMap = ct as Record<string, ContatoMotoristaApi>;
+				}
+			}
+
 			// A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
 			const motoristas = data as MotoristaApi[];
 			const driversComAvaliacoes = await Promise.all(
 				motoristas.map(async (m) => {
 					const driver = mapMotorista(m, ultimoPorMotorista.get(m.idMotorista));
+					driver.lockedBy = resolverLockedBy(contatosMap[String(m.idMotorista)], userEmail);
 					if (!onlyEmRota) {
 						try {
 							driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
@@ -247,11 +276,36 @@ export function useDrivers(userName: string, onlyEmRota = false) {
 		} finally {
 			setLoading(false);
 		}
-	}, [onlyEmRota]);
+	}, [onlyEmRota, userEmail]);
 
 	useEffect(() => {
 		loadFromApi();
 	}, [loadFromApi]);
+
+	const sincronizarContatos = useCallback(async () => {
+		if (onlyEmRota) return;
+		try {
+			const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos`);
+			if (!res.ok) return;
+			const contatosMap = (await res.json()) as Record<string, ContatoMotoristaApi>;
+			setDrivers((ds) =>
+				ds.map((d) => {
+					const nextLockedBy = resolverLockedBy(contatosMap[d.id], userEmail);
+					return d.lockedBy === nextLockedBy ? d : { ...d, lockedBy: nextLockedBy };
+				}),
+			);
+		} catch {
+			// ignora falha transitória de polling
+		}
+	}, [onlyEmRota, userEmail]);
+
+	useEffect(() => {
+		if (onlyEmRota) return;
+		const timer = window.setInterval(() => {
+			void sincronizarContatos();
+		}, 5000);
+		return () => window.clearInterval(timer);
+	}, [onlyEmRota, sincronizarContatos]);
 
 	const sortedDrivers = useMemo(() => {
 		return [...drivers].sort((a, b) => {
@@ -277,28 +331,106 @@ export function useDrivers(userName: string, onlyEmRota = false) {
 
 	function select(id: string) {
 		setSelectedId(id);
-		setDrivers((ds) =>
-			ds.map((d) => {
-				if (d.id === id)
-					return d.lockedBy && d.lockedBy !== "Você"
-						? d
-						: { ...d, lockedBy: "Você" };
-				if (d.lockedBy === "Você") return { ...d, lockedBy: null };
-				return d;
-			}),
-		);
+		if (!/^\d+$/.test(id)) {
+			setDrivers((ds) =>
+				ds.map((d) => {
+					if (d.id === id)
+						return d.lockedBy && d.lockedBy !== "Você"
+							? d
+							: { ...d, lockedBy: "Você" };
+					if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+					return d;
+				}),
+			);
+			return;
+		}
+
+		void (async () => {
+			try {
+				const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${id}/contato`, {
+					method: "POST",
+				});
+				if (res.ok) {
+					setDrivers((ds) =>
+						ds.map((d) => {
+							if (d.id === id) return { ...d, lockedBy: "Você" };
+							if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+							return d;
+						}),
+					);
+				} else if (res.status === 409) {
+					const contato = (await res.json()) as ContatoMotoristaApi;
+					const holder = resolverLockedBy(contato, userEmail);
+					setDrivers((ds) =>
+						ds.map((d) => {
+							if (d.id === id) return { ...d, lockedBy: holder };
+							if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+							return d;
+						}),
+					);
+				}
+			} catch (e) {
+				console.error("Falha ao registrar contato com motorista:", e);
+			}
+		})();
 	}
 
-	function closeDetail() {
+	const closeDetail = useCallback(() => {
+		const idAtual = selectedId;
+		if (idAtual && /^\d+$/.test(idAtual)) {
+			void apiFetch(`${MOTORISTA_URL}/api/motoristas/${idAtual}/contato`, {
+				method: "DELETE",
+			}).catch(() => null);
+		}
 		setDrivers((ds) =>
 			ds.map((d) =>
-				d.id === selectedId && d.lockedBy === "Você"
+				d.id === idAtual && d.lockedBy === "Você"
 					? { ...d, lockedBy: null }
 					: d,
 			),
 		);
 		setSelectedId(null);
-	}
+	}, [selectedId]);
+
+	// Renova o TTL do contato a cada 30s enquanto o detalhe estiver aberto para este usuário.
+	const isMeuLockAtual = selected?.lockedBy === "Você";
+	useEffect(() => {
+		if (!selectedId || !/^\d+$/.test(selectedId) || !isMeuLockAtual) return;
+		const heartbeat = window.setInterval(() => {
+			void (async () => {
+				try {
+					const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${selectedId}/contato`, {
+						method: "POST",
+					});
+					if (res.status === 409) {
+						const contato = (await res.json()) as ContatoMotoristaApi;
+						const holder = resolverLockedBy(contato, userEmail);
+						setDrivers((ds) =>
+							ds.map((d) => (d.id === selectedId ? { ...d, lockedBy: holder } : d)),
+						);
+					}
+				} catch {
+					// ignora falha transitória de heartbeat
+				}
+			})();
+		}, 30_000);
+		return () => window.clearInterval(heartbeat);
+	}, [selectedId, isMeuLockAtual, userEmail]);
+
+	// Libera qualquer contato ativo ao fechar a aba ou desmontar a tela.
+	useEffect(() => {
+		const liberarAoSair = () => {
+			void apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos/meus`, {
+				method: "DELETE",
+				keepalive: true,
+			}).catch(() => null);
+		};
+		window.addEventListener("beforeunload", liberarAoSair);
+		return () => {
+			window.removeEventListener("beforeunload", liberarAoSair);
+			liberarAoSair();
+		};
+	}, []);
 
 	// Grava o status no banco. O manifesto só é enviado ao entrar em rota.
 	async function salvarStatus(

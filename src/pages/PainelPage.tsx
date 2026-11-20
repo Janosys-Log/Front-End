@@ -60,7 +60,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     loading,
     loadFailed,
     reload,
-  } = useDrivers(session.userName, view === "dashboard" && session.role === "operador");
+  } = useDrivers(session.userName, view === "dashboard" && session.role === "operador", session.email);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoriaVeiculo | "all">("all");
@@ -275,12 +275,6 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
           onChangeMes={setMesRanking}
           visaoSelecionada={visaoRanking}
           onChangeVisao={setVisaoRanking}
-          onAbrirPaginaNegativos={(mes, visao) => {
-            setMesRanking(mes);
-            setVisaoRanking(visao);
-            setRankingModalOpen(false);
-            setMostrarNegativos(true);
-          }}
         />
       )}
     </>

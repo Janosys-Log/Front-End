@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { ResultadoImportacao } from '../types/importacao';
+import type { ResultadoImportacao, InfoUltimaImportacao } from '../types/importacao';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { UploadSection } from '../components/componentesPageUpload/Uploadsection';
 import { importarCsvs, validarArquivos } from '../services/importacao.service';
-import { buscarDataUltimaImportacao } from '../services/manifestoService';
+import { buscarUltimaImportacao } from '../services/manifestoService';
 import '../styles/uploadPage.css';
 import '../styles/Uploadpageacoes.css';
 
@@ -12,16 +12,26 @@ export function UploadPage() {
   const [arqManifestos, setArqManifestos] = useState<File | null>(null);
   const [resVeiculos, setResVeiculos] = useState<ResultadoImportacao | null>(null);
   const [resManifestos, setResManifestos] = useState<ResultadoImportacao | null>(null);
-  const [dataImportacao, setDataImportacao] = useState<Date | null>(null);
+  const [importacaoVeiculos, setImportacaoVeiculos] = useState<InfoUltimaImportacao | null>(null);
+  const [importacaoManifestos, setImportacaoManifestos] = useState<InfoUltimaImportacao | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // A data vem do backend (/api/manifestos/dataDoUltimoManifesto), não do relógio do navegador.
+  // Busca os dados da última importação no backend
   useEffect(() => {
     let ativo = true;
-    buscarDataUltimaImportacao().then(data => {
-      if (ativo) setDataImportacao(data);
-    });
+    async function carregarMetadados() {
+      const [veic, manif, geral] = await Promise.all([
+        buscarUltimaImportacao('veiculos'),
+        buscarUltimaImportacao('manifestos'),
+        buscarUltimaImportacao(),
+      ]);
+      if (ativo) {
+        setImportacaoVeiculos(veic ?? geral);
+        setImportacaoManifestos(manif ?? geral);
+      }
+    }
+    carregarMetadados();
     return () => {
       ativo = false;
     };
@@ -40,21 +50,59 @@ export function UploadPage() {
     setErro(null);
   }
 
-  async function enviar() {
-    const mensagem = validarArquivos(arqVeiculos, arqManifestos);
-    if (mensagem || !arqVeiculos || !arqManifestos) {
-      setErro(mensagem);
+  async function enviar(tipo: 'todos' | 'veiculos' | 'manifestos' = 'todos') {
+    const vParaEnviar = tipo === 'todos' || tipo === 'veiculos' ? arqVeiculos : null;
+    const mParaEnviar = tipo === 'todos' || tipo === 'manifestos' ? arqManifestos : null;
+
+    const mensagem = validarArquivos(vParaEnviar, mParaEnviar);
+    if (mensagem || (!vParaEnviar && !mParaEnviar)) {
+      setErro(
+        tipo === 'veiculos'
+          ? 'Selecione o arquivo CSV de veículos primeiro.'
+          : tipo === 'manifestos'
+            ? 'Selecione o arquivo CSV de manifestos primeiro.'
+            : (mensagem ?? 'Selecione ao menos um arquivo CSV para importar.')
+      );
       return;
     }
 
     setErro(null);
     setEnviando(true);
     try {
-      const resultado = await importarCsvs(arqVeiculos, arqManifestos);
-      setResVeiculos(resultado.veiculos);
-      setResManifestos(resultado.manifestos);
-      // Depois de importar, busca de novo a data no backend.
-      setDataImportacao(await buscarDataUltimaImportacao());
+      const resultado = await importarCsvs(vParaEnviar, mParaEnviar);
+      const agora = new Date();
+      const horaStr = agora.toLocaleTimeString('pt-BR');
+      const dataStr = agora.toISOString().slice(0, 10);
+
+      if (resultado.veiculos) {
+        setResVeiculos(resultado.veiculos);
+        setImportacaoVeiculos({
+          data: dataStr,
+          hora: horaStr,
+          dataHora: agora.toISOString(),
+          nomeArquivo: vParaEnviar?.name || resultado.veiculos.nomeArquivo || 'veiculos.csv',
+          tipoArquivo: 'VEICULOS',
+        });
+      }
+
+      if (resultado.manifestos) {
+        setResManifestos(resultado.manifestos);
+        setImportacaoManifestos({
+          data: dataStr,
+          hora: horaStr,
+          dataHora: agora.toISOString(),
+          nomeArquivo: mParaEnviar?.name || resultado.manifestos.nomeArquivo || 'manifestos.csv',
+          tipoArquivo: 'MANIFESTOS',
+        });
+      }
+
+      // Re-sincroniza com o backend
+      const [novoVeic, novoManif] = await Promise.all([
+        buscarUltimaImportacao('veiculos'),
+        buscarUltimaImportacao('manifestos'),
+      ]);
+      if (novoVeic) setImportacaoVeiculos(novoVeic);
+      if (novoManif) setImportacaoManifestos(novoManif);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível importar os arquivos. Tente novamente.');
     } finally {
@@ -67,7 +115,7 @@ export function UploadPage() {
       <header className="upload-page__cabecalho">
         <h1 className="upload-page__titulo">Importação de arquivos</h1>
         <p className="upload-page__descricao">
-          Escolha o CSV de veículos e o de manifestos. Os dois são enviados juntos.
+          Escolha o CSV de veículos, o de manifestos ou ambos para importar de forma independente ou conjunta.
         </p>
       </header>
 
@@ -80,7 +128,10 @@ export function UploadPage() {
           resultadoVeiculos={resVeiculos}
           resultadoManifestos={resManifestos}
           enviando={enviando}
-          ultimaImportacao={dataImportacao}
+          ultimaImportacaoVeiculos={importacaoVeiculos}
+          ultimaImportacaoManifestos={importacaoManifestos}
+          onImportarVeiculos={() => enviar('veiculos')}
+          onImportarManifestos={() => enviar('manifestos')}
         />
 
         <div className="upload-page__acoes">
@@ -93,11 +144,17 @@ export function UploadPage() {
           <button
             type="button"
             className="upload-page__enviar"
-            onClick={enviar}
-            disabled={enviando}
+            onClick={() => enviar('todos')}
+            disabled={enviando || (!arqVeiculos && !arqManifestos)}
           >
             {enviando ? (
               <><Loader2 size={16} className="painel-upload-card__spin" /> Importando…</>
+            ) : arqVeiculos && arqManifestos ? (
+              'Importar ambos os arquivos'
+            ) : arqVeiculos ? (
+              'Importar veículos'
+            ) : arqManifestos ? (
+              'Importar manifestos'
             ) : (
               'Importar arquivos'
             )}

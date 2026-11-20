@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RANKING DE RENTABILIDADE - US.14 (Modal, Tabela, Gráficos e Card Trigger)
+   RANKING DE RENTABILIDADE (Modal, Tabela, Gráficos e Card Trigger)
    ========================================================================== */
 
 /* --- Backdrop e Dialog do Modal (Figura 3) --- */
@@ -76,6 +76,84 @@
   font-size: 0.8rem;
   font-style: italic;
   color: #64748b;
+}
+
+/* --- Abas de Navegação Interna no Módulo de Ranking --- */
+.rk-modal-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.rk-modal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.rk-modal-tab:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.rk-modal-tab--ativo {
+  background: #1e3a8a;
+  color: #ffffff;
+  border-color: #1e3a8a;
+  box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+}
+
+.rk-modal-tab--ativo:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.rk-modal-tab-icon {
+  font-size: 1rem;
+}
+
+.rk-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
+.rk-modal-negativos-wrap {
+  width: 100%;
+  animation: rkFadeIn 0.2s ease-in-out;
+}
+
+@keyframes rkFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* --- Barra de Controles e Filtros (Itens 2, 10, 3, 4) --- */
@@ -956,7 +1034,7 @@
   font-style: italic;
 }
 
-/* Banner de Alerta Explícito no Modal do Ranking Geral (US.14 -> US.15) */
+/* Banner de Alerta Explícito no Modal do Ranking Geral */
 .rk-negativos-alert-banner {
   display: flex;
   align-items: center;

@@ -1,17 +1,21 @@
 import type { CardsCusto } from "../../types/cardsCusto";
 import { useEffect, useState } from "react";
 import useUsuario from "../../hooks/useUsuario";
+import { MESES } from "../../constants/grandeSp";
 import { buscarCardsCusto, CardsCustoError } from "../../services/cardsCusto.service";
 import CardCustoOperacional from "./CardCustoOperacional";
 import CardManifesto from "./CardManifesto";
 import "../../styles/cardsCusto.css";
 
 type Props = {
-  /** Mês no formato AAAA-MM, o mesmo do card de rentabilidade. Vazio = mês mais recente. */
+  /** Mês no formato AAAA-MM. */
   mes?: string;
+  mesNum?: number;
+  ano?: number;
+  onMudarPeriodo?: (mes: number, ano: number) => void;
 };
 
-export default function CardsCustoGrupo({ mes }: Props) {
+export default function CardsCustoGrupo({ mes, mesNum, ano, onMudarPeriodo }: Props) {
   const { session, logout } = useUsuario();
   const ehGerente = session.role === "gerente";
 
@@ -19,6 +23,13 @@ export default function CardsCustoGrupo({ mes }: Props) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
+  const anoAtual = new Date().getFullYear();
+  const anosOpcoes = Array.from(
+    new Set([2024, 2025, 2026, 2027, anoAtual, ano ?? anoAtual])
+  ).sort((a, b) => a - b);
+
+  const mesAtualSelecionado = mesNum ?? (mes ? Number(mes.split("-")[1]) : new Date().getMonth() + 1);
+  const anoAtualSelecionado = ano ?? (mes ? Number(mes.split("-")[0]) : anoAtual);
   useEffect(() => {
     if (!ehGerente)
       return;
@@ -55,6 +66,36 @@ export default function CardsCustoGrupo({ mes }: Props) {
 
   return (
     <div className="cc-grupo">
+      <div className="cc-periodo-bar">
+        <span className="cc-periodo-label">Mês dos cards:</span>
+        <div className="cc-periodo-controls">
+          <select
+            className="cc-periodo-select"
+            value={mesAtualSelecionado}
+            onChange={e => onMudarPeriodo?.(Number(e.target.value), anoAtualSelecionado)}
+            aria-label="Selecionar mês dos cards"
+          >
+            {MESES.map((nome, i) => (
+              <option key={nome} value={i + 1}>
+                {nome.toUpperCase()}
+              </option>
+            ))}
+          </select>
+          <select
+            className="cc-periodo-select cc-periodo-select-ano"
+            value={anoAtualSelecionado}
+            onChange={e => onMudarPeriodo?.(mesAtualSelecionado, Number(e.target.value))}
+            aria-label="Selecionar ano dos cards"
+          >
+            {anosOpcoes.map(a => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <CardCustoOperacional dados={dados} carregando={carregando} erro={erro} />
       <div className="cc-par">
         <CardManifesto tipo="melhor" dados={dados} carregando={carregando} erro={erro} />

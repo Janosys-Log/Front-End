@@ -24,6 +24,7 @@ export type Driver = {
   avaliacoes: Evaluation[];
   categoria?: string;
   tipoVeiculo?: string;
+  notaMedia?: number;
 };
 
 export type ResultadoSalvarStatus = { ok: true } | { ok: false; mensagem: string };

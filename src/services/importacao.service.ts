@@ -72,45 +72,50 @@ function normalizeErro(raw: Raw): ErroLinha {
 }
 
 function normalizeResultado<T>(
-  raw: Raw | undefined,
+  raw: Raw | null | undefined,
   normalizeItem: (r: Raw) => T,
-): ResultadoImportacao<T> {
+): ResultadoImportacao<T> | null {
+  if (!raw) return null;
   const validos = (raw?.validos ?? []) as Raw[];
   const invalidos = (raw?.invalidos ?? []) as Raw[];
   return {
     validos: validos.map(normalizeItem),
     invalidos: invalidos.map(normalizeErro),
+    nomeArquivo: raw?.nomeArquivo ? String(raw.nomeArquivo) : undefined,
+    dataHora: raw?.dataHora ? String(raw.dataHora) : undefined,
   };
 }
 
-/** Devolve a mensagem de erro, ou null se os dois arquivos foram escolhidos. */
+/** Devolve a mensagem de erro, ou null se pelo menos um arquivo foi escolhido. */
 export function validarArquivos(
   veiculos: File | null,
   manifestos: File | null,
 ): string | null {
   if (!veiculos && !manifestos)
-    return "Faltam os dois arquivos: o CSV de veículos e o CSV de manifestos.";
-  if (!veiculos)
-    return "Falta o CSV de veículos.";
-  if (!manifestos)
-    return "Falta o CSV de manifestos.";
+    return "Selecione ao menos um arquivo CSV (veículos ou manifestos) para importar.";
   return null;
 }
 
 /**
- * Envia os dois CSVs numa única requisição.
- * Os nomes dos campos ("csvVeiculo" e "csvManifesto") precisam bater com os
- * @RequestParam / @RequestPart do controller.
- * Resposta esperada do back:
- * { veiculos: { validos, invalidos }, manifestos: { validos, invalidos } }
+ * Envia um ou ambos os CSVs numa única requisição.
+ * Os nomes dos campos ("csvVeiculo" e "csvManifesto") batem com os
+ * @RequestParam do controller.
  */
 export async function importarCsvs(
-  veiculos: File,
-  manifestos: File,
+  veiculos?: File | null,
+  manifestos?: File | null,
 ): Promise<ResultadoImportacaoDupla<VeiculoDTO, ManifestoDTO>> {
+  if (!veiculos && !manifestos) {
+    throw new Error("Selecione ao menos um arquivo CSV para importar.");
+  }
+
   const formData = new FormData();
-  formData.append("csvVeiculo", veiculos);
-  formData.append("csvManifesto", manifestos);
+  if (veiculos) {
+    formData.append("csvVeiculo", veiculos);
+  }
+  if (manifestos) {
+    formData.append("csvManifesto", manifestos);
+  }
 
   const response = await apiFetch(CSV_URL, { method: "POST", body: formData });
 
@@ -126,8 +131,11 @@ export async function importarCsvs(
 
   const data = await response.json();
 
-  // Hoje o back serializa ResultadoCsv com estes nomes (veja os getters da classe);
-  // aceita também "veiculos"/"manifestos" caso você renomeie com @JsonProperty.
+  if (data.titulo || data.mensagem) {
+    throw new Error(`${data.titulo ? data.titulo + ': ' : ''}${data.mensagem}`);
+  }
+
+  // O back serializa ResultadoCsv com resultadoLinhasDoCsv / resultadoLinhasDoCsv2 e veiculos / manifestos
   return {
     veiculos: normalizeResultado(data.veiculos ?? data.resultadoLinhasDoCsv, normalizeVeiculo),
     manifestos: normalizeResultado(data.manifestos ?? data.resultadoLinhasDoCsv2, normalizeManifesto),

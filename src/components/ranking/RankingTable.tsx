@@ -216,7 +216,7 @@ export default function RankingTable({ itens, onAnalisarNegativos }: Props) {
                       type="button"
                       className="rk-negative-side-tab"
                       onClick={onAnalisarNegativos}
-                      title="Abrir análise detalhada de motoristas com rentabilidade média negativa (US.15)"
+                      title="Abrir análise detalhada de motoristas com rentabilidade média negativa"
                     >
                       <span>Clique para análise</span>
                     </button>
@@ -244,7 +244,7 @@ export default function RankingTable({ itens, onAnalisarNegativos }: Props) {
         </span>
       </div>
 
-      {/* Bloco de Ação Explícito para o Ranking de Negativos (US.15) - SEMPRE VISÍVEL */}
+      {/* Bloco de Ação Explícito para o Ranking de Negativos - SEMPRE VISÍVEL */}
       {onAnalisarNegativos && (
         <div className="rk-table-negativos-footer-cta">
           <div className="rk-neg-footer-info">
@@ -267,9 +267,9 @@ export default function RankingTable({ itens, onAnalisarNegativos }: Props) {
             type="button"
             className="rk-neg-footer-btn"
             onClick={onAnalisarNegativos}
-            title="Abrir página com o ranking exclusivo e detalhamento dos motoristas negativos (US.15)"
+            title="Abrir página com o ranking exclusivo e detalhamento dos motoristas negativos"
           >
-            <span>Ver Ranking de Negativos (US.15) →</span>
+            <span>Ver Ranking de Negativos →</span>
           </button>
         </div>
       )}

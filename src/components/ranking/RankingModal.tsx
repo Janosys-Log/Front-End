@@ -12,6 +12,7 @@ import {
 } from "../../services/ranking.service";
 import RankingChartsColumn from "./RankingChartsColumn";
 import RankingTable from "./RankingTable";
+import RentabilidadeNegativaPage from "../../pages/RentabilidadeNegativaPage";
 
 interface Props {
   isOpen: boolean;
@@ -94,15 +95,17 @@ export default function RankingModal({
   );
   const [carregando, setCarregando] = useState<boolean>(false);
   const [erro, setErro] = useState<string>("");
+  const [abaAtiva, setAbaAtiva] = useState<"ranking" | "negativos">("ranking");
 
   // Filtros locais da tabela (não afetam os 3 gráficos laterais conforme CA7)
   const [filtroFaixa, setFiltroFaixa] = useState<string>("TODOS");
   const [filtroVeiculo, setFiltroVeiculo] = useState<string>("TODOS");
   const [buscaMotorista, setBuscaMotorista] = useState<string>("");
 
-  // Fechar com tecla ESC (CA1)
+  // Fechar com tecla ESC (CA1) e resetar aba ao abrir
   useEffect(() => {
     if (!isOpen) return;
+    setAbaAtiva("ranking");
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
@@ -225,10 +228,47 @@ export default function RankingModal({
           <p className="rk-modal-subtitle">
             Rentabilidade Total / Nº de Manifestos
           </p>
+
+          {/* Abas de Navegação Interna no Módulo de Ranking */}
+          <nav className="rk-modal-tabs" aria-label="Navegação do ranking">
+            <button
+              type="button"
+              className={`rk-modal-tab ${abaAtiva === "ranking" ? "rk-modal-tab--ativo" : ""}`}
+              onClick={() => setAbaAtiva("ranking")}
+            >
+              <span className="rk-modal-tab-icon">📊</span>
+              <span>Ranking Completo</span>
+            </button>
+
+            <button
+              type="button"
+              className={`rk-modal-tab ${abaAtiva === "negativos" ? "rk-modal-tab--ativo" : ""}`}
+              onClick={() => setAbaAtiva("negativos")}
+            >
+              <span className="rk-modal-tab-icon">⚠️</span>
+              <span>Motoristas Negativos</span>
+              {resumo && resumo.totalMotoristasNegativos > 0 && (
+                <span className="rk-tab-badge">{resumo.totalMotoristasNegativos}</span>
+              )}
+            </button>
+          </nav>
         </header>
 
-        {/* Barra de Controles (Itens 2, 10, 3 e 4 do Mockup) */}
-        <div className="rk-controls-bar">
+        {abaAtiva === "negativos" ? (
+          <div className="rk-modal-negativos-wrap">
+            <RentabilidadeNegativaPage
+              mesInicial={resumo?.mesReferencia ?? mesSelecionado}
+              visaoInicial={visaoSelecionada}
+              onVoltarAoDashboard={() => setAbaAtiva("ranking")}
+              textoBotaoVoltar="← Voltar ao Ranking Completo"
+              onChangeMes={onChangeMes}
+              onChangeVisao={onChangeVisao}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Barra de Controles (Itens 2, 10, 3 e 4 do Mockup) */}
+            <div className="rk-controls-bar">
           {/* (2) Seletor de mês em pílula azul */}
           <div className="rk-month-select-wrap">
             <select
@@ -380,8 +420,8 @@ export default function RankingModal({
           </div>
         )}
 
-        {/* Banner/Atalho Explícito para o Ranking de Negativos (US.15) - SEMPRE VISÍVEL */}
-        {onAbrirPaginaNegativos && resumo && (
+        {/* Banner/Atalho Explícito para o Ranking de Negativos */}
+        {resumo && (
           <div className="rk-negativos-alert-banner">
             <div className="rk-neg-alert-content">
               <span className="rk-neg-alert-icon">
@@ -402,10 +442,13 @@ export default function RankingModal({
             <button
               type="button"
               className="rk-neg-alert-btn"
-              onClick={() => onAbrirPaginaNegativos(resumo.mesReferencia, visaoSelecionada)}
-              title="Acessar o painel exclusivo de motoristas com rentabilidade média negativa (US.15)"
+              onClick={() => {
+                onAbrirPaginaNegativos?.(resumo.mesReferencia, visaoSelecionada);
+                setAbaAtiva("negativos");
+              }}
+              title="Acessar o painel exclusivo de motoristas com rentabilidade média negativa"
             >
-              <span>Ver Ranking de Negativos (US.15) →</span>
+              <span>Ver Ranking de Negativos →</span>
             </button>
           </div>
         )}
@@ -432,15 +475,13 @@ export default function RankingModal({
             {/* Coluna Esquerda: Tabela Completa do Ranking */}
             <RankingTable
               itens={itensFiltrados}
-              onAnalisarNegativos={
-                onAbrirPaginaNegativos && resumo
-                  ? () =>
-                      onAbrirPaginaNegativos(
-                        resumo.mesReferencia,
-                        visaoSelecionada,
-                      )
-                  : undefined
-              }
+              onAnalisarNegativos={() => {
+                onAbrirPaginaNegativos?.(
+                  resumo?.mesReferencia ?? mesSelecionado,
+                  visaoSelecionada,
+                );
+                setAbaAtiva("negativos");
+              }}
             />
 
             {/* Coluna Direita: 3 Gráficos Empilhados */}
@@ -453,6 +494,8 @@ export default function RankingModal({
             />
           </div>
         ) : null}
+          </>
+        )}
       </div>
     </div>
   );
