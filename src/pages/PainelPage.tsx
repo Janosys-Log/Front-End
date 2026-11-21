@@ -52,6 +52,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     select,
     closeDetail,
     changeStatus,
+    atualizarTelefone,
     reset: resetDrivers,
     avaliacao,
     setAvaliacao,
@@ -237,6 +238,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                     driver={selected}
                     role={session.role}
                     onChangeStatus={handleChangeStatus}
+                    onUpdatePhone={atualizarTelefone}
                     onOpenEvalModal={setEvalDriverId}
                     onOpenManifestoModal={setManifestoDriverId}
                     onClose={selected ? closeDetail : null}

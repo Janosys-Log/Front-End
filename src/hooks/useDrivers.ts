@@ -597,6 +597,35 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 		setSelectedId(null);
 	}
 
+	const atualizarTelefone = useCallback(
+		async (id: string, novoTelefone: string): Promise<ResultadoSalvarStatus> => {
+			const limpo = novoTelefone.trim();
+			if (!limpo) return { ok: false, mensagem: "Informe um telefone válido." };
+			if (limpo.length > 20) return { ok: false, mensagem: "O telefone deve ter no máximo 20 caracteres." };
+
+			if (!/^\d+$/.test(id)) {
+				setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, telefone: limpo } : d)));
+				return STATUS_SALVO;
+			}
+
+			try {
+				const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${id}/telefone`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ contatoMotorista: limpo }),
+				});
+				if (!res.ok) {
+					return { ok: false, mensagem: await lerMensagemDeErro(res) };
+				}
+				setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, telefone: limpo } : d)));
+				return STATUS_SALVO;
+			} catch {
+				return { ok: false, mensagem: "Não foi possível salvar o telefone do motorista." };
+			}
+		},
+		[],
+	);
+
 	return {
 		drivers,
 		sortedDrivers,
@@ -605,6 +634,7 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 		select,
 		closeDetail,
 		changeStatus,
+		atualizarTelefone,
 		concludeRoute,
 		reset,
 		importar,
