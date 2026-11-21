@@ -101,13 +101,18 @@ export default function useMotoristasPainel() {
         return response.json();
       })
       .then((responseJson: Motorista[]) => {
-        const motoristasIndesejados: MotoristaIndesejado[] = responseJson.map(m => ({
-          id: m.idMotorista,
-          nome: m.nomeMotorista,
-          veiculo: m.veiculo.subtipoVeiculo,
-          updatedAt: new Date(m.statusUpdatedAt),
-          diasComIndesejado: Math.floor((Date.now() - new Date(m.statusUpdatedAt).getTime()) / (1000 * 60 * 60 * 24)),
-        }))
+        const motoristasIndesejados: MotoristaIndesejado[] = responseJson.map((m) => {
+          const updatedAt = new Date(m.statusUpdatedAt);
+          const diffMs = Date.now() - updatedAt.getTime();
+          const dias = Number.isNaN(diffMs) ? 0 : Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+          return {
+            id: m.idMotorista,
+            nome: m.nomeMotorista,
+            veiculo: m.veiculo?.subtipoVeiculo ?? "—",
+            updatedAt,
+            diasComIndesejado: dias,
+          };
+        })
           .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
         return motoristasIndesejados;
       });
