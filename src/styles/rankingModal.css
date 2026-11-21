@@ -1122,3 +1122,15 @@
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
 }
+
+@media (max-width: 960px) {
+  .rk-main-grid {
+    grid-template-columns: 1fr;
+  }
+  .rk-table-section {
+    overflow-x: auto;
+  }
+  .rk-table-container {
+    min-width: 620px;
+  }
+}

@@ -471,3 +471,10 @@
   font-size: 0.82rem;
   color: #64748b;
 }
+
+@media (max-width: 960px) {
+  .rn-table-wrapper,
+  .dm-table-wrapper {
+    overflow-x: auto;
+  }
+}
