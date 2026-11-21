@@ -5,7 +5,7 @@ import { TIPO_LABEL } from "../constants/vehicles";
 import { apiFetch } from "../services/apiFetch";
 import type { VeiculoDTO } from "../services/importacao.service";
 import { veiculosParaDrivers } from "../services/importacao.service";
-import type { Driver, DriverStatus, ResultadoSalvarStatus } from "../types/driver";
+import type { AtualizarContatoPayload, Driver, DriverStatus, ResultadoSalvarStatus, TipoContato } from "../types/driver";
 import { ehNumeroManifestoValido } from "../utils/manifesto";
 
 // manifestoService.ts e importacao.service.ts
@@ -60,6 +60,9 @@ type MotoristaApi = {
 	nomeMotorista: string;
 	cpfMotorista?: string;
 	contatoMotorista?: string;
+	tipoContato?: TipoContato | null;
+	contatoSecundario?: string | null;
+	tipoContatoSecundario?: TipoContato | null;
 	status?: string;
 	statusUpdatedAt?: string | number[] | null;
 	manifestoAtual?: number | null;
@@ -203,6 +206,9 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		categoria: v?.tipoVeiculo,
 		tipoVeiculo: v?.subtipoVeiculo,
 		telefone: m.contatoMotorista || "",
+		tipoContato: m.tipoContato ?? undefined,
+		telefoneSecundario: m.contatoSecundario || undefined,
+		tipoContatoSecundario: m.tipoContatoSecundario ?? undefined,
 		// Usa a data mais recente entre os manifestos do CSV e a última rota concluída.
 		manifestoData: manifestoMaisRecente,
 		status: mapStatus(m.status),
@@ -598,13 +604,31 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 	}
 
 	const atualizarTelefone = useCallback(
-		async (id: string, novoTelefone: string): Promise<ResultadoSalvarStatus> => {
-			const limpo = novoTelefone.trim();
-			if (!limpo) return { ok: false, mensagem: "Informe um telefone válido." };
-			if (limpo.length > 20) return { ok: false, mensagem: "O telefone deve ter no máximo 20 caracteres." };
+		async (id: string, payload: AtualizarContatoPayload): Promise<ResultadoSalvarStatus> => {
+			const limpo = payload.contatoMotorista.trim();
+			const secundarioLimpo = payload.contatoSecundario?.trim() || "";
+			if (!limpo) return { ok: false, mensagem: "Informe o contato principal." };
+			if (limpo.length > 20 || secundarioLimpo.length > 20) {
+				return { ok: false, mensagem: "Cada contato deve ter no máximo 20 caracteres." };
+			}
+
+			const body = {
+				contatoMotorista: limpo,
+				tipoContato: payload.tipoContato ?? null,
+				contatoSecundario: secundarioLimpo || null,
+				tipoContatoSecundario: secundarioLimpo ? (payload.tipoContatoSecundario ?? null) : null,
+			};
+
+			const aplicarLocal = (d: Driver): Driver => ({
+				...d,
+				telefone: limpo,
+				tipoContato: payload.tipoContato,
+				telefoneSecundario: secundarioLimpo || undefined,
+				tipoContatoSecundario: secundarioLimpo ? payload.tipoContatoSecundario : undefined,
+			});
 
 			if (!/^\d+$/.test(id)) {
-				setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, telefone: limpo } : d)));
+				setDrivers((ds) => ds.map((d) => (d.id === id ? aplicarLocal(d) : d)));
 				return STATUS_SALVO;
 			}
 
@@ -612,15 +636,15 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 				const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${id}/telefone`, {
 					method: "PUT",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ contatoMotorista: limpo }),
+					body: JSON.stringify(body),
 				});
 				if (!res.ok) {
 					return { ok: false, mensagem: await lerMensagemDeErro(res) };
 				}
-				setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, telefone: limpo } : d)));
+				setDrivers((ds) => ds.map((d) => (d.id === id ? aplicarLocal(d) : d)));
 				return STATUS_SALVO;
 			} catch {
-				return { ok: false, mensagem: "Não foi possível salvar o telefone do motorista." };
+				return { ok: false, mensagem: "Não foi possível salvar os contatos do motorista." };
 			}
 		},
 		[],

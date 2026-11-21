@@ -1,8 +1,9 @@
 import type { Role } from "../../types/app";
-import type { Driver, DriverStatus, ResultadoSalvarStatus } from "../../types/driver";
+import type { AtualizarContatoPayload, Driver, DriverStatus, ResultadoSalvarStatus, TipoContato } from "../../types/driver";
 import { useEffect, useState } from "react";
 import { Calendar, Check, FileText, LayoutGrid, Lock, Pencil, Phone, Star, Truck, X } from "lucide-react";
 import { STATUS, STATUS_KEYS } from "../../constants/status";
+import { TIPO_CONTATO_LABEL, TIPO_CONTATO_OPCOES } from "../../types/driver";
 import { ageDays, formatPhone } from "../../utils/date";
 import Stars from "../common/Stars";
 import StatusPill from "../common/StatusPill";
@@ -11,7 +12,7 @@ type Props = {
   driver: Driver | null;
   role: Role;
   onChangeStatus: (id: string, status: DriverStatus) => void;
-  onUpdatePhone?: (id: string, telefone: string) => Promise<ResultadoSalvarStatus>;
+  onUpdatePhone?: (id: string, payload: AtualizarContatoPayload) => Promise<ResultadoSalvarStatus>;
   onOpenEvalModal: (id: string) => void;
   onOpenManifestoModal: (id: string) => void;
   onClose: (() => void) | null;
@@ -21,13 +22,19 @@ type Props = {
 export default function DriverDetail({ driver, role, onChangeStatus, onUpdatePhone, onOpenEvalModal, onOpenManifestoModal, onClose }: Props) {
   const [editandoTelefone, setEditandoTelefone] = useState(false);
   const [telefoneDraft, setTelefoneDraft] = useState("");
+  const [tipoContatoDraft, setTipoContatoDraft] = useState<TipoContato>("WHATSAPP");
+  const [telefoneSecundarioDraft, setTelefoneSecundarioDraft] = useState("");
+  const [tipoSecundarioDraft, setTipoSecundarioDraft] = useState<TipoContato>("TELEFONE_RESIDENCIAL");
   const [salvandoTelefone, setSalvandoTelefone] = useState(false);
 
   useEffect(() => {
     setEditandoTelefone(false);
     setTelefoneDraft(driver?.telefone ?? "");
+    setTipoContatoDraft(driver?.tipoContato ?? "WHATSAPP");
+    setTelefoneSecundarioDraft(driver?.telefoneSecundario ?? "");
+    setTipoSecundarioDraft(driver?.tipoContatoSecundario ?? "TELEFONE_RESIDENCIAL");
     setSalvandoTelefone(false);
-  }, [driver?.id, driver?.telefone]);
+  }, [driver?.id, driver?.telefone, driver?.tipoContato, driver?.telefoneSecundario, driver?.tipoContatoSecundario]);
 
   if (!driver) {
     return (
@@ -47,13 +54,27 @@ export default function DriverDetail({ driver, role, onChangeStatus, onUpdatePho
   async function salvarTelefone() {
     if (!driver || !onUpdatePhone || salvandoTelefone) return;
     setSalvandoTelefone(true);
-    const res = await onUpdatePhone(driver.id, telefoneDraft);
+    const res = await onUpdatePhone(driver.id, {
+      contatoMotorista: telefoneDraft,
+      tipoContato: tipoContatoDraft,
+      contatoSecundario: telefoneSecundarioDraft,
+      tipoContatoSecundario: tipoSecundarioDraft,
+    });
     setSalvandoTelefone(false);
     if (!res.ok) {
       window.alert(res.mensagem);
       return;
     }
     setEditandoTelefone(false);
+  }
+
+  function cancelarEdicao() {
+    if (!driver) return;
+    setEditandoTelefone(false);
+    setTelefoneDraft(driver.telefone);
+    setTipoContatoDraft(driver.tipoContato ?? "WHATSAPP");
+    setTelefoneSecundarioDraft(driver.telefoneSecundario ?? "");
+    setTipoSecundarioDraft(driver.tipoContatoSecundario ?? "TELEFONE_RESIDENCIAL");
   }
 
   return (
@@ -78,70 +99,117 @@ export default function DriverDetail({ driver, role, onChangeStatus, onUpdatePho
       </div>
 
       <div className="detail-grid">
-        <div className="info-cell">
-          <span>Telefone</span>
+        <div className={`info-cell${editandoTelefone ? " info-cell-wide" : ""}`}>
+          <span>Contatos</span>
           {editandoTelefone
             ? (
-                <div className="phone-edit-form">
-                  <input
-                    className="phone-input"
-                    type="text"
-                    maxLength={20}
-                    value={telefoneDraft}
-                    onChange={e => setTelefoneDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") void salvarTelefone();
-                      if (e.key === "Escape") {
-                        setEditandoTelefone(false);
-                        setTelefoneDraft(driver.telefone);
-                      }
-                    }}
-                    placeholder="(11) 99999-9999"
-                    disabled={salvandoTelefone}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    className="phone-action-btn save"
-                    title="Salvar telefone"
-                    onClick={() => void salvarTelefone()}
-                    disabled={salvandoTelefone}
-                  >
-                    <Check size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    className="phone-action-btn cancel"
-                    title="Cancelar"
-                    onClick={() => {
-                      setEditandoTelefone(false);
-                      setTelefoneDraft(driver.telefone);
-                    }}
-                    disabled={salvandoTelefone}
-                  >
-                    <X size={13} />
-                  </button>
+                <div className="phone-edit-stack">
+                  <div className="phone-edit-form">
+                    <select
+                      className="phone-type-select"
+                      value={tipoContatoDraft}
+                      onChange={e => setTipoContatoDraft(e.target.value as TipoContato)}
+                      disabled={salvandoTelefone}
+                    >
+                      {TIPO_CONTATO_OPCOES.map(op => (
+                        <option key={op.value} value={op.value}>{op.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      className="phone-input"
+                      type="text"
+                      maxLength={20}
+                      value={telefoneDraft}
+                      onChange={e => setTelefoneDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void salvarTelefone();
+                        if (e.key === "Escape") cancelarEdicao();
+                      }}
+                      placeholder="Contato 1"
+                      disabled={salvandoTelefone}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="phone-edit-form">
+                    <select
+                      className="phone-type-select"
+                      value={tipoSecundarioDraft}
+                      onChange={e => setTipoSecundarioDraft(e.target.value as TipoContato)}
+                      disabled={salvandoTelefone}
+                    >
+                      {TIPO_CONTATO_OPCOES.map(op => (
+                        <option key={op.value} value={op.value}>{op.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      className="phone-input"
+                      type="text"
+                      maxLength={20}
+                      value={telefoneSecundarioDraft}
+                      onChange={e => setTelefoneSecundarioDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void salvarTelefone();
+                        if (e.key === "Escape") cancelarEdicao();
+                      }}
+                      placeholder="Contato 2 (opcional)"
+                      disabled={salvandoTelefone}
+                    />
+                    <button
+                      type="button"
+                      className="phone-action-btn save"
+                      title="Salvar contatos"
+                      onClick={() => void salvarTelefone()}
+                      disabled={salvandoTelefone}
+                    >
+                      <Check size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      className="phone-action-btn cancel"
+                      title="Cancelar"
+                      onClick={cancelarEdicao}
+                      disabled={salvandoTelefone}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
                 </div>
               )
             : (
-                <strong className="phone-row">
-                  <Phone size={12} />
-                  {" "}
-                  <span>{formatPhone(driver.telefone) || "Não informado"}</span>
-                  {onUpdatePhone && !isLockedByOther && (
-                    <button
-                      type="button"
-                      className="phone-edit-btn"
-                      title="Editar telefone"
-                      onClick={() => {
-                        setTelefoneDraft(driver.telefone);
-                        setEditandoTelefone(true);
-                      }}
-                    >
-                      <Pencil size={12} />
-                    </button>
+                <div className="phone-list">
+                  <strong className="phone-row">
+                    <Phone size={12} />
+                    <span>
+                      {driver.tipoContato ? `${TIPO_CONTATO_LABEL[driver.tipoContato]}: ` : ""}
+                      {formatPhone(driver.telefone) || "Não informado"}
+                    </span>
+                    {onUpdatePhone && !isLockedByOther && (
+                      <button
+                        type="button"
+                        className="phone-edit-btn"
+                        title="Editar contatos"
+                        onClick={() => {
+                          setTelefoneDraft(driver.telefone);
+                          setTipoContatoDraft(driver.tipoContato ?? "WHATSAPP");
+                          setTelefoneSecundarioDraft(driver.telefoneSecundario ?? "");
+                          setTipoSecundarioDraft(driver.tipoContatoSecundario ?? "TELEFONE_RESIDENCIAL");
+                          setEditandoTelefone(true);
+                        }}
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
+                  </strong>
+                  {driver.telefoneSecundario && (
+                    <strong className="phone-row phone-row-secondary">
+                      <Phone size={12} />
+                      <span>
+                        {driver.tipoContatoSecundario ? `${TIPO_CONTATO_LABEL[driver.tipoContatoSecundario]}: ` : ""}
+                        {formatPhone(driver.telefoneSecundario)}
+                      </span>
+                    </strong>
                   )}
-                </strong>
+                </div>
               )}
         </div>
         <div className="info-cell">

@@ -179,3 +179,12 @@
   background: var(--panel); color: var(--text); outline: none;
 }
 .phone-input:focus { border-color: var(--accent); }
+.info-cell-wide { grid-column: 1 / -1; }
+.phone-list { display: flex; flex-direction: column; gap: 4px; }
+.phone-row-secondary { opacity: 0.9; font-weight: 500; }
+.phone-edit-stack { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.phone-type-select {
+  padding: 4px 6px; font-size: 12px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--panel); color: var(--text); outline: none;
+}
+.phone-type-select:focus { border-color: var(--accent); }

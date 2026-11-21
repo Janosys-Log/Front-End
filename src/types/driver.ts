@@ -10,12 +10,38 @@ export type Evaluation = {
   manifesto?: number;
 };
 
+export type TipoContato = "TELEFONE_RESIDENCIAL" | "COMERCIAL" | "WHATSAPP" | "OUTRO";
+
+export const TIPO_CONTATO_OPCOES: { value: TipoContato; label: string }[] = [
+  { value: "TELEFONE_RESIDENCIAL", label: "Telefone Residencial" },
+  { value: "COMERCIAL", label: "Comercial" },
+  { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "OUTRO", label: "Outro" },
+];
+
+export const TIPO_CONTATO_LABEL: Record<TipoContato, string> = {
+  TELEFONE_RESIDENCIAL: "Telefone Residencial",
+  COMERCIAL: "Comercial",
+  WHATSAPP: "WhatsApp",
+  OUTRO: "Outro",
+};
+
+export type AtualizarContatoPayload = {
+  contatoMotorista: string;
+  tipoContato?: TipoContato;
+  contatoSecundario?: string;
+  tipoContatoSecundario?: TipoContato;
+};
+
 export type Driver = {
   id: string;
   nome: string;
   veiculo: string;
   placa: string;
   telefone: string;
+  tipoContato?: TipoContato;
+  telefoneSecundario?: string;
+  tipoContatoSecundario?: TipoContato;
   manifestoData: string;
   status: DriverStatus;
   lockedBy: string | null;
