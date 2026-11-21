@@ -154,23 +154,25 @@ export default function DriverDetail({ driver, role, onChangeStatus, onUpdatePho
                       placeholder="Contato 2 (opcional)"
                       disabled={salvandoTelefone}
                     />
-                    <button
-                      type="button"
-                      className="phone-action-btn save"
-                      title="Salvar contatos"
-                      onClick={() => void salvarTelefone()}
-                      disabled={salvandoTelefone}
-                    >
-                      <Check size={13} />
-                    </button>
+                  </div>
+                  <div className="phone-edit-actions">
                     <button
                       type="button"
                       className="phone-action-btn cancel"
-                      title="Cancelar"
                       onClick={cancelarEdicao}
                       disabled={salvandoTelefone}
                     >
                       <X size={13} />
+                      <span>Cancelar</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="phone-action-btn save"
+                      onClick={() => void salvarTelefone()}
+                      disabled={salvandoTelefone}
+                    >
+                      <Check size={13} />
+                      <span>{salvandoTelefone ? "Salvando..." : "Salvar"}</span>
                     </button>
                   </div>
                 </div>

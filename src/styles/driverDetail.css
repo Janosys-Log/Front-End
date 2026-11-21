@@ -162,11 +162,18 @@
 }
 
 .phone-row { display: flex; align-items: center; gap: 6px; }
-.phone-edit-btn, .phone-action-btn {
+.phone-edit-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--panel); color: var(--muted);
   cursor: pointer; padding: 0; flex-shrink: 0;
+}
+.phone-edit-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px; }
+.phone-action-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 26px; padding: 0 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+  cursor: pointer; flex-shrink: 0;
 }
 .phone-edit-btn:hover { color: var(--text); border-color: var(--accent); }
 .phone-action-btn.save { color: #16a34a; border-color: rgba(22, 163, 74, 0.4); }
