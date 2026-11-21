@@ -67,11 +67,9 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
           <strong>
             <Calendar size={12} />
             {" "}
-            {driver.manifestoData}
-            {" "}
-            (
-            {ageDays(driver.manifestoData)}
-            d)
+            {driver.manifestoData
+              ? `${driver.manifestoData} (${ageDays(driver.manifestoData)}d)`
+              : "Sem manifesto"}
           </strong>
         </div>
         {driver.manifestoAtual !== undefined && driver.manifestoAtual !== null && (

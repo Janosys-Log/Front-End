@@ -84,7 +84,7 @@ export default function DriverList({
                   <span className="manifest-age">
                     <Calendar size={11} />
                     {" "}
-                    {formatDate(d.manifestoData)}
+                    {d.manifestoData ? formatDate(d.manifestoData) : "Sem manifesto"}
                   </span>
                   <StatusPill status={d.status} compact />
                 </div>

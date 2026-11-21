@@ -315,8 +315,9 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 
 			const hasManifestA = !!a.manifestoData;
 			const hasManifestB = !!b.manifestoData;
-			if (!hasManifestA && hasManifestB) return -1;
-			if (hasManifestA && !hasManifestB) return 1;
+			// Motoristas com histórico (manifesto) aparecem primeiro; sem manifesto vão para o final.
+			if (hasManifestA && !hasManifestB) return -1;
+			if (!hasManifestA && hasManifestB) return 1;
 			if (hasManifestA && hasManifestB) {
 				const timeA = new Date(a.manifestoData).getTime();
 				const timeB = new Date(b.manifestoData).getTime();
