@@ -1,6 +1,7 @@
 import type { Role } from "../../types/app";
-import type { Driver, DriverStatus } from "../../types/driver";
-import { Calendar, FileText, LayoutGrid, Lock, Phone, Star, Truck, X } from "lucide-react";
+import type { Driver, DriverStatus, ResultadoSalvarStatus } from "../../types/driver";
+import { useEffect, useState } from "react";
+import { Calendar, Check, FileText, LayoutGrid, Lock, Pencil, Phone, Star, Truck, X } from "lucide-react";
 import { STATUS, STATUS_KEYS } from "../../constants/status";
 import { ageDays, formatPhone } from "../../utils/date";
 import Stars from "../common/Stars";
@@ -10,13 +11,24 @@ type Props = {
   driver: Driver | null;
   role: Role;
   onChangeStatus: (id: string, status: DriverStatus) => void;
+  onUpdatePhone?: (id: string, telefone: string) => Promise<ResultadoSalvarStatus>;
   onOpenEvalModal: (id: string) => void;
   onOpenManifestoModal: (id: string) => void;
   onClose: (() => void) | null;
 };
 
 // Avaliação só aparece ao concluir uma rota (modal) e no histórico da gerência
-export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalModal, onOpenManifestoModal, onClose }: Props) {
+export default function DriverDetail({ driver, role, onChangeStatus, onUpdatePhone, onOpenEvalModal, onOpenManifestoModal, onClose }: Props) {
+  const [editandoTelefone, setEditandoTelefone] = useState(false);
+  const [telefoneDraft, setTelefoneDraft] = useState("");
+  const [salvandoTelefone, setSalvandoTelefone] = useState(false);
+
+  useEffect(() => {
+    setEditandoTelefone(false);
+    setTelefoneDraft(driver?.telefone ?? "");
+    setSalvandoTelefone(false);
+  }, [driver?.id, driver?.telefone]);
+
   if (!driver) {
     return (
       <div className="detail-empty">
@@ -31,6 +43,18 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
     : "—";
   const isLockedByOther = !!driver.lockedBy && driver.lockedBy !== "Você";
   const emRota = driver.status === "em_rota";
+
+  async function salvarTelefone() {
+    if (!driver || !onUpdatePhone || salvandoTelefone) return;
+    setSalvandoTelefone(true);
+    const res = await onUpdatePhone(driver.id, telefoneDraft);
+    setSalvandoTelefone(false);
+    if (!res.ok) {
+      window.alert(res.mensagem);
+      return;
+    }
+    setEditandoTelefone(false);
+  }
 
   return (
     <div className="detail-panel">
@@ -56,11 +80,69 @@ export default function DriverDetail({ driver, role, onChangeStatus, onOpenEvalM
       <div className="detail-grid">
         <div className="info-cell">
           <span>Telefone</span>
-          <strong>
-            <Phone size={12} />
-            {" "}
-            {formatPhone(driver.telefone)}
-          </strong>
+          {editandoTelefone
+            ? (
+                <div className="phone-edit-form">
+                  <input
+                    className="phone-input"
+                    type="text"
+                    maxLength={20}
+                    value={telefoneDraft}
+                    onChange={e => setTelefoneDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void salvarTelefone();
+                      if (e.key === "Escape") {
+                        setEditandoTelefone(false);
+                        setTelefoneDraft(driver.telefone);
+                      }
+                    }}
+                    placeholder="(11) 99999-9999"
+                    disabled={salvandoTelefone}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="phone-action-btn save"
+                    title="Salvar telefone"
+                    onClick={() => void salvarTelefone()}
+                    disabled={salvandoTelefone}
+                  >
+                    <Check size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="phone-action-btn cancel"
+                    title="Cancelar"
+                    onClick={() => {
+                      setEditandoTelefone(false);
+                      setTelefoneDraft(driver.telefone);
+                    }}
+                    disabled={salvandoTelefone}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )
+            : (
+                <strong className="phone-row">
+                  <Phone size={12} />
+                  {" "}
+                  <span>{formatPhone(driver.telefone) || "Não informado"}</span>
+                  {onUpdatePhone && !isLockedByOther && (
+                    <button
+                      type="button"
+                      className="phone-edit-btn"
+                      title="Editar telefone"
+                      onClick={() => {
+                        setTelefoneDraft(driver.telefone);
+                        setEditandoTelefone(true);
+                      }}
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  )}
+                </strong>
+              )}
         </div>
         <div className="info-cell">
           <span>Manifesto</span>
