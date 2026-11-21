@@ -63,6 +63,7 @@ type MotoristaApi = {
 	status?: string;
 	statusUpdatedAt?: string | number[] | null;
 	manifestoAtual?: number | null;
+	dataUltimoManifesto?: string | number[] | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
 };
@@ -183,6 +184,13 @@ function rotuloVeiculo(k: string): string {
 
 function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 	const v = m.veiculo ?? undefined;
+	const dataRotaConcluida = normalizarData(m.dataUltimoManifesto);
+	const manifestoMaisRecente =
+		ultimoManifesto && dataRotaConcluida
+			? ultimoManifesto > dataRotaConcluida
+				? ultimoManifesto
+				: dataRotaConcluida
+			: ultimoManifesto || dataRotaConcluida || "";
 	return {
 		id: String(m.idMotorista),
 		nome: m.nomeMotorista,
@@ -195,8 +203,8 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		categoria: v?.tipoVeiculo,
 		tipoVeiculo: v?.subtipoVeiculo,
 		telefone: m.contatoMotorista || "",
-		// Sem manifesto = string vazia (o sort já trata como "sem manifesto" e coloca na frente).
-		manifestoData: ultimoManifesto ?? "",
+		// Usa a data mais recente entre os manifestos do CSV e a última rota concluída.
+		manifestoData: manifestoMaisRecente,
 		status: mapStatus(m.status),
 		manifestoAtual: m.manifestoAtual ?? undefined,
 		lockedBy: null,
@@ -495,6 +503,7 @@ export function useDrivers(userName: string, onlyEmRota = false, userEmail?: str
 							...d,
 							status: "disponivel" as DriverStatus,
 							manifestoAtual: undefined,
+							manifestoData: TODAY,
 							avaliacoes: [
 								{ nota, obs: feedback, data: TODAY, operador: userName, manifesto: d.manifestoAtual },
 								...d.avaliacoes,
