@@ -3,16 +3,23 @@
 
 import type { CategoriaVeiculo, TipoVeiculo } from "../constants/vehicles";
 import type { Theme, View } from "../types/app";
-import type { StatusFilter } from "../types/driver";
+import type { DriverStatus, StatusFilter } from "../types/driver";
+import type { VisaoRanking } from "../types/ranking";
 import { useEffect, useRef, useState } from "react";
 import DriverDetail from "../components/drivers/DriverDetail";
 import DriverList from "../components/drivers/DriverList";
 import ListToolbar from "../components/drivers/ListToolbar";
 import NavbarPilula from "../components/layout/NavbarPilula";
 import EvalModal from "../components/modals/EvalModal";
+import PainelEmRota from "../components/dashboard/PainelEmRota";
+import ManifestoModal from "../components/modals/ManifestoModal";
+import RankingModal from "../components/ranking/RankingModal";
 import { useDrivers } from "../hooks/useDrivers";
 import { useResizableWidth } from "../hooks/useResizableWidth";
 import useUsuario from "../hooks/useUsuario";
+import { listarManifestosEmUso } from "../utils/manifesto";
+import DashboardPage from "./DashboardPage";
+import RentabilidadeNegativaPage from "./RentabilidadeNegativaPage";
 import { UploadPage } from "./UploadPage";
 import UsuariosPage from "./UsuariosPage";
 
@@ -35,6 +42,8 @@ function viewFromPath(pathname: string): View {
 
 export default function PainelPage({ theme, onToggleTheme }: Props) {
   const { session, logout } = useUsuario();
+  const initialView = viewFromPath(window.location.pathname);
+  const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
   const {
     drivers,
     sortedDrivers,
@@ -43,19 +52,26 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     select,
     closeDetail,
     changeStatus,
+    atualizarTelefone,
     reset: resetDrivers,
     avaliacao,
     setAvaliacao,
     sendAvaliacao,
     error,
-  } = useDrivers(session.userName);
+    loading,
+    loadFailed,
+    reload,
+  } = useDrivers(session.userName, view === "dashboard" && session.role === "operador", session.email);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoriaVeiculo | "all">("all");
   const [typeFilter, setTypeFilter] = useState<TipoVeiculo | "all">("all");
   const [evalDriverId, setEvalDriverId] = useState<string | null>(null);
-  const initialView = viewFromPath(window.location.pathname);
-  const [view, setView] = useState<View>(() => session.role !== "gerente" && initialView === "usuarios" ? "motoristas" : initialView);
+  const [manifestoDriverId, setManifestoDriverId] = useState<string | null>(null);
+  const [rankingModalOpen, setRankingModalOpen] = useState(false);
+  const [mesRanking, setMesRanking] = useState<string>("");
+  const [visaoRanking, setVisaoRanking] = useState<VisaoRanking>("GERAL");
+  const [mostrarNegativos, setMostrarNegativos] = useState(false);
   const previousView = useRef(view);
   const {
     width: listWidth,
@@ -65,6 +81,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
   } = useResizableWidth();
 
   const evalDriver = drivers.find(d => d.id === evalDriverId) ?? null;
+  const manifestoDriver = drivers.find(d => d.id === manifestoDriverId) ?? null;
 
   useEffect(() => {
     if (previousView.current === view) return;
@@ -74,6 +91,7 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
     setCategoryFilter("all");
     setTypeFilter("all");
     setEvalDriverId(null);
+    setManifestoDriverId(null);
     setAvaliacao({ motoristaId: 0, nota: 5, numeroManifesto: 0, feedback: "" });
     closeDetail();
     if (view === "motoristas") resetDrivers();
@@ -98,10 +116,23 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
       window.history.replaceState(null, "", viewPaths[view]);
   }, [session.role, view]);
 
+  async function handleChangeStatus(id: string, status: DriverStatus) {
+    const resultado = await changeStatus(id, status);
+    if (!resultado.ok)
+      window.alert(resultado.mensagem);
+  }
+
+  async function handleDashboardEvaluation() {
+    const saved = await sendAvaliacao();
+    if (saved) await reload();
+    return saved;
+  }
+
   function navigateTo(nextView: View) {
     if (nextView === "usuarios" && session.role !== "gerente") {
       return;
     }
+    setMostrarNegativos(false);
     setView(nextView);
     window.history.pushState(null, "", viewPaths[nextView]);
   }
@@ -120,7 +151,36 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
         />
 
         {view === "dashboard"
-          ? <main className="app-content dashboard-empty" aria-label="Dashboard" />
+          ? session.role === "operador"
+            ? (
+                <main className="app-content dashboard-route-page" aria-label="Dashboard do operador">
+                  <PainelEmRota
+                    drivers={sortedDrivers}
+                    loading={loading}
+                    loadFailed={loadFailed}
+                    onSelect={driver => setEvalDriverId(driver.id)}
+                  />
+                </main>
+              )
+            : (
+                <div className="app-content">
+                  {mostrarNegativos && session.role === "gerente" ? (
+                    <RentabilidadeNegativaPage
+                      mesInicial={mesRanking}
+                      visaoInicial={visaoRanking}
+                      onVoltarAoDashboard={() => setMostrarNegativos(false)}
+                    />
+                  ) : (
+                    <DashboardPage
+                      onOpenRanking={({ mes, ano, regiao }) => {
+                        setMesRanking(`${ano}-${String(mes).padStart(2, "0")}`);
+                        setVisaoRanking(regiao);
+                        setRankingModalOpen(true);
+                      }}
+                    />
+                  )}
+                </div>
+              )
           : view === "usuarios"
           ? (
               <div className="app-content">
@@ -177,8 +237,10 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
                   <DriverDetail
                     driver={selected}
                     role={session.role}
-                    onChangeStatus={changeStatus}
+                    onChangeStatus={handleChangeStatus}
+                    onUpdatePhone={atualizarTelefone}
                     onOpenEvalModal={setEvalDriverId}
+                    onOpenManifestoModal={setManifestoDriverId}
                     onClose={selected ? closeDetail : null}
                   />
                 </div>
@@ -187,14 +249,34 @@ export default function PainelPage({ theme, onToggleTheme }: Props) {
             : null}
       </div>
 
+      {manifestoDriver && (
+        <ManifestoModal
+          driver={manifestoDriver}
+          manifestosEmUso={listarManifestosEmUso(drivers, manifestoDriver.id)}
+          onClose={() => setManifestoDriverId(null)}
+          onConfirm={numeroManifesto => changeStatus(manifestoDriver.id, "em_rota", numeroManifesto)}
+        />
+      )}
+
       {evalDriver && (
         <EvalModal
           driver={evalDriver}
           onClose={() => setEvalDriverId(null)}
           avaliacao={avaliacao}
           setAvaliacao={setAvaliacao}
-          sendAvaliacao={sendAvaliacao}
+          sendAvaliacao={view === "dashboard" ? handleDashboardEvaluation : sendAvaliacao}
           error={error}
+        />
+      )}
+
+      {session.role === "gerente" && (
+        <RankingModal
+          isOpen={rankingModalOpen}
+          onClose={() => setRankingModalOpen(false)}
+          mesSelecionado={mesRanking}
+          onChangeMes={setMesRanking}
+          visaoSelecionada={visaoRanking}
+          onChangeVisao={setVisaoRanking}
         />
       )}
     </>

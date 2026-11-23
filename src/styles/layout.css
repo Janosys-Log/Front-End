@@ -91,3 +91,22 @@
 .app-content.resizing .list-col {
   transition: none;
 }
+
+@media (max-width: 760px) {
+  .app-content {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .list-col {
+    width: 100% !important;
+    min-width: 0;
+    max-height: 45vh;
+  }
+  .resize-handle {
+    display: none;
+  }
+  .detail-col {
+    width: 100%;
+    overflow: visible;
+  }
+}

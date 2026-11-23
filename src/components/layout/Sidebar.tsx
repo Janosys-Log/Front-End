@@ -61,8 +61,8 @@ export default function Sidebar({
       <div className="nav-items">
         <button
           type="button"
-          className={view === "painel" ? "active" : ""}
-          onClick={() => onNavigate("painel")}
+          className={view === "motoristas" ? "active" : ""}
+          onClick={() => onNavigate("motoristas")}
         >
           <LayoutGrid size={16} />
           <span className={`${collapsed && "hidden"}`}>Painel operacional</span>

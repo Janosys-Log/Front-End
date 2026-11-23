@@ -6,7 +6,11 @@
 @import "./brand.css";
 @import "./login.css";
 @import "./modal.css";
+@import "./manifestoModal.css";
 @import "./nav.css";
 @import "./layout.css";
 @import "./driverList.css";
 @import "./driverDetail.css";
+@import "./dashboard.css";
+@import "./rankingModal.css";
+@import "./rankingNegativos.css";

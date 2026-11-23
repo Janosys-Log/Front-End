@@ -1,0 +1,189 @@
+/* src/components/RentabilidadeMediaCard/styles.css */
+.rm-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 680px;
+  padding: 22px 24px 18px;
+  background: #dce8f7;
+  border: 2px solid #1f4e9c;
+  border-radius: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(31, 78, 156, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.rm-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(31, 78, 156, 0.14);
+}
+.rm-card *, .rm-card *::before, .rm-card *::after { box-sizing: border-box; }
+
+/* Controles: lado a lado, alinhados à direita, sem sobrepor nada */
+.rm-top {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.rm-seg {
+  display: inline-flex;
+  border: 2px solid #1f4e9c;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.rm-seg button {
+  border: 0;
+  background: #fff;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.rm-seg button.ativo { background: #1f4e9c; color: #fff; }
+
+.rm-mes {
+  appearance: none;
+  border: 1px solid #1f4e9c;
+  border-radius: 6px;
+  background: #5b8fd6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 6px 18px;
+  cursor: pointer;
+}
+.rm-mes.rm-mes-badge {
+  cursor: default;
+  user-select: none;
+}
+
+/* Título: margem negativa removida */
+.rm-header { text-align: center; margin-top: 14px; }
+.rm-header h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.2;
+  color: #1565c0;
+  letter-spacing: .5px;
+}
+.rm-header small {
+  display: block;
+  margin-top: 4px;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.rm-sub { margin: 16px 0 8px; font-size: 12.5px; font-weight: 700; letter-spacing: .3px; }
+.rm-sub.melhores { color: #1f3a7a; }
+.rm-sub.piores { color: #a3201e; }
+
+.rm-linha {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  gap: 12px;
+}
+.rm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.rm-valor { font-size: 20px; font-weight: 700; }
+.rm-valor.ruim { color: #e02424; }
+.rm-nome {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 3px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rm-meta { font-size: 10px; color: #555; }
+.rm-pos-ruim { color: #e02424; font-size: 20px; font-weight: 700; }
+
+.rm-medalha {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  border: 2px solid #fff;
+  margin-bottom: 3px;
+}
+.rm-medalha.m1 { background: #e6b800; }
+.rm-medalha.m2 { background: #9aa0a6; }
+.rm-medalha.m3 { background: #b9773a; }
+.seta { font-size: 9px; }
+.seta.up { color: #1b8f3a; }
+.seta.down { color: #d12b2b; }
+
+/* Gráfico */
+.rm-grafico {
+  position: relative;
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid #b9c6da;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.rm-grafico svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible; /* evita cortar os rótulos dos pontos */
+}
+.rm-grafico-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.rm-grafico-head span { color: #666; text-align: right; }
+.rm-linha-graf { stroke: #1f3a7a; stroke-width: 2.5; fill: none; }
+.rm-ponto { fill: #fff; stroke: #1f3a7a; stroke-width: 2.5; }
+.rm-ponto-txt { font-size: 9px; font-weight: 700; fill: #111; }
+.rm-media-linha { stroke: #c0392b; stroke-width: 1; opacity: .6; }
+.rm-media-txt { font-size: 10px; fill: #c0392b; font-weight: 600; }
+
+.rm-meses {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  margin-top: 8px;
+  gap: 4px;
+}
+.rm-meses > * { flex: 1; min-width: 0; }
+.rm-meses b { display: block; font-size: 11px; color: #1f2a55; }
+.rm-meses span { display: block; font-size: 9.5px; font-weight: 600; margin-top: 1px; color: #64748b; }
+
+.rm-cidades {
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #2a2a8a;
+  text-align: center;
+  border: 1px solid #c8d3e6;
+  background: #eef3fb;
+  border-radius: 4px;
+}
+
+.rm-rodape { margin: 12px 0 0; text-align: center; font-size: 12px; font-weight: 700; color: #2a2a8a; }
+.rm-erro { color: #b00020; font-size: 12px; text-align: center; }
+.rm-loading { font-size: 12px; text-align: center; color: #555; }

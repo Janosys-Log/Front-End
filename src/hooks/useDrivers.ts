@@ -5,12 +5,17 @@ import { TIPO_LABEL } from "../constants/vehicles";
 import { apiFetch } from "../services/apiFetch";
 import type { VeiculoDTO } from "../services/importacao.service";
 import { veiculosParaDrivers } from "../services/importacao.service";
-import type { Driver, DriverStatus } from "../types/driver";
+import type { AtualizarContatoPayload, Driver, DriverStatus, ResultadoSalvarStatus, TipoContato } from "../types/driver";
+import { ehNumeroManifestoValido } from "../utils/manifesto";
 
 // manifestoService.ts e importacao.service.ts
 
 const MOTORISTA_URL = "http://localhost:8083";
 const AVALIACAO_URL = "http://localhost:8082";
+
+const STATUS_SALVO: ResultadoSalvarStatus = { ok: true };
+const MENSAGEM_FALHA_AO_SALVAR_STATUS =
+	"Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.";
 
 // Chave onde o auth.service.ts guarda o token no localStorage.
 // Confira com: grep -n "localStorage" src/services/auth.service.ts
@@ -22,6 +27,24 @@ type Avaliacao = {
 	numeroManifesto: number;
 	feedback: string;
 };
+
+type ContatoMotoristaApi = {
+	motoristaId: number;
+	email: string;
+	nome: string;
+	expiraEm: string;
+};
+
+function resolverLockedBy(
+	contato: ContatoMotoristaApi | undefined,
+	userEmail?: string,
+): string | null {
+	if (!contato) return null;
+	if (userEmail && contato.email.toLowerCase() === userEmail.toLowerCase()) {
+		return "Você";
+	}
+	return contato.nome || contato.email;
+}
 
 // Veiculo.java -> vem aninhado dentro de Motorista
 type VeiculoApi = {
@@ -37,7 +60,13 @@ type MotoristaApi = {
 	nomeMotorista: string;
 	cpfMotorista?: string;
 	contatoMotorista?: string;
+	tipoContato?: TipoContato | null;
+	contatoSecundario?: string | null;
+	tipoContatoSecundario?: TipoContato | null;
 	status?: string;
+	statusUpdatedAt?: string | number[] | null;
+	manifestoAtual?: number | null;
+	dataUltimoManifesto?: string | number[] | null;
 	notaMedia?: number;
 	veiculo?: VeiculoApi | null;
 };
@@ -54,6 +83,7 @@ type AvaliacaoApi = {
 	nota: number;
 	feedback: string;
 	dataRegistro: string;
+	numeroManifesto?: number;
 };
 
 async function carregarAvaliacoes(motoristaId: number) {
@@ -63,12 +93,20 @@ async function carregarAvaliacoes(motoristaId: number) {
 	if (!response.ok) throw new Error(`Falha ao carregar avaliações (${response.status})`);
 	const data: unknown = await response.json();
 	if (!Array.isArray(data)) throw new Error("Formato de avaliações inesperado");
-	return (data as AvaliacaoApi[]).map((a) => ({
+	return (data as AvaliacaoApi[])
+		.filter((a) => a.motoristaId === motoristaId)
+		.map((a) => ({
 		nota: a.nota,
 		obs: a.feedback,
 		data: a.dataRegistro?.slice(0, 10) ?? "",
 		operador: "",
+		manifesto: a.numeroManifesto,
 	}));
+}
+
+async function lerMensagemDeErro(resposta: Response): Promise<string> {
+	const corpo: { mensagem?: string } | null = await resposta.json().catch(() => null);
+	return corpo?.mensagem ?? MENSAGEM_FALHA_AO_SALVAR_STATUS;
 }
 
 const STATUS_API: Record<DriverStatus, string> = {
@@ -149,6 +187,13 @@ function rotuloVeiculo(k: string): string {
 
 function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 	const v = m.veiculo ?? undefined;
+	const dataRotaConcluida = normalizarData(m.dataUltimoManifesto);
+	const manifestoMaisRecente =
+		ultimoManifesto && dataRotaConcluida
+			? ultimoManifesto > dataRotaConcluida
+				? ultimoManifesto
+				: dataRotaConcluida
+			: ultimoManifesto || dataRotaConcluida || "";
 	return {
 		id: String(m.idMotorista),
 		nome: m.nomeMotorista,
@@ -161,15 +206,21 @@ function mapMotorista(m: MotoristaApi, ultimoManifesto?: string): Driver {
 		categoria: v?.tipoVeiculo,
 		tipoVeiculo: v?.subtipoVeiculo,
 		telefone: m.contatoMotorista || "",
-		// Sem manifesto = string vazia (o sort já trata como "sem manifesto" e coloca na frente).
-		manifestoData: ultimoManifesto ?? "",
+		tipoContato: m.tipoContato ?? undefined,
+		telefoneSecundario: m.contatoSecundario || undefined,
+		tipoContatoSecundario: m.tipoContatoSecundario ?? undefined,
+		// Usa a data mais recente entre os manifestos do CSV e a última rota concluída.
+		manifestoData: manifestoMaisRecente,
 		status: mapStatus(m.status),
+		manifestoAtual: m.manifestoAtual ?? undefined,
 		lockedBy: null,
 		avaliacoes: [],
+		notaMedia: m.notaMedia ?? undefined,
+		statusUpdatedAt: normalizarData(m.statusUpdatedAt),
 	};
 }
 
-export function useDrivers(userName: string) {
+export function useDrivers(userName: string, onlyEmRota = false, userEmail?: string) {
 	const [drivers, setDrivers] = useState<Driver[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [avaliacao, setAvaliacao] = useState<Avaliacao>({
@@ -180,14 +231,17 @@ export function useDrivers(userName: string) {
 	});
 	const [error, setError] = useState<string>("");
 	const [loading, setLoading] = useState(true);
+	const [loadFailed, setLoadFailed] = useState(false);
 
 	const loadFromApi = useCallback(async () => {
 		setLoading(true);
+		setLoadFailed(false);
 		try {
-			const [resMot, resMan] = await Promise.all([
-				apiFetch(`${MOTORISTA_URL}/api/motoristas`),
+			const [resMot, resMan, resContatos] = await Promise.all([
+				apiFetch(`${MOTORISTA_URL}/api/motoristas${onlyEmRota ? "?status=Em_Rota" : ""}`),
 				// Se manifestos falhar, a lista de motoristas ainda carrega.
-				apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
+				onlyEmRota ? Promise.resolve(null) : apiFetch(`${MOTORISTA_URL}/api/manifestos`).catch(() => null),
+				onlyEmRota ? Promise.resolve(null) : apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos`).catch(() => null),
 			]);
 			if (resMot.status === 401)
 				throw new Error("Sessão expirada. Faça login novamente.");
@@ -204,15 +258,26 @@ export function useDrivers(userName: string) {
 			}
 			const ultimoPorMotorista = ultimoManifestoPorMotorista(manifestos);
 
+			let contatosMap: Record<string, ContatoMotoristaApi> = {};
+			if (resContatos?.ok) {
+				const ct: unknown = await resContatos.json();
+				if (ct && typeof ct === "object") {
+					contatosMap = ct as Record<string, ContatoMotoristaApi>;
+				}
+			}
+
 			// A resposta da API é a fonte da verdade, inclusive quando a lista está vazia.
 			const motoristas = data as MotoristaApi[];
 			const driversComAvaliacoes = await Promise.all(
 				motoristas.map(async (m) => {
 					const driver = mapMotorista(m, ultimoPorMotorista.get(m.idMotorista));
-					try {
-						driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
-					} catch (e) {
-						console.error(`Falha ao carregar avaliações do motorista ${m.idMotorista}:`, e);
+					driver.lockedBy = resolverLockedBy(contatosMap[String(m.idMotorista)], userEmail);
+					if (!onlyEmRota) {
+						try {
+							driver.avaliacoes = await carregarAvaliacoes(m.idMotorista);
+						} catch (e) {
+							console.error(`Falha ao carregar avaliações do motorista ${m.idMotorista}:`, e);
+						}
 					}
 					return driver;
 				}),
@@ -220,15 +285,41 @@ export function useDrivers(userName: string) {
 			setDrivers(driversComAvaliacoes);
 		} catch (e) {
 			setDrivers([]);
+			setLoadFailed(true);
 			console.error("Falha ao carregar motoristas da API:", e);
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [onlyEmRota, userEmail]);
 
 	useEffect(() => {
 		loadFromApi();
 	}, [loadFromApi]);
+
+	const sincronizarContatos = useCallback(async () => {
+		if (onlyEmRota) return;
+		try {
+			const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos`);
+			if (!res.ok) return;
+			const contatosMap = (await res.json()) as Record<string, ContatoMotoristaApi>;
+			setDrivers((ds) =>
+				ds.map((d) => {
+					const nextLockedBy = resolverLockedBy(contatosMap[d.id], userEmail);
+					return d.lockedBy === nextLockedBy ? d : { ...d, lockedBy: nextLockedBy };
+				}),
+			);
+		} catch {
+			// ignora falha transitória de polling
+		}
+	}, [onlyEmRota, userEmail]);
+
+	useEffect(() => {
+		if (onlyEmRota) return;
+		const timer = window.setInterval(() => {
+			void sincronizarContatos();
+		}, 5000);
+		return () => window.clearInterval(timer);
+	}, [onlyEmRota, sincronizarContatos]);
 
 	const sortedDrivers = useMemo(() => {
 		return [...drivers].sort((a, b) => {
@@ -238,8 +329,9 @@ export function useDrivers(userName: string) {
 
 			const hasManifestA = !!a.manifestoData;
 			const hasManifestB = !!b.manifestoData;
-			if (!hasManifestA && hasManifestB) return -1;
-			if (hasManifestA && !hasManifestB) return 1;
+			// Motoristas com histórico (manifesto) aparecem primeiro; sem manifesto vão para o final.
+			if (hasManifestA && !hasManifestB) return -1;
+			if (!hasManifestA && hasManifestB) return 1;
 			if (hasManifestA && hasManifestB) {
 				const timeA = new Date(a.manifestoData).getTime();
 				const timeB = new Date(b.manifestoData).getTime();
@@ -254,38 +346,117 @@ export function useDrivers(userName: string) {
 
 	function select(id: string) {
 		setSelectedId(id);
-		setDrivers((ds) =>
-			ds.map((d) => {
-				if (d.id === id)
-					return d.lockedBy && d.lockedBy !== "Você"
-						? d
-						: { ...d, lockedBy: "Você" };
-				if (d.lockedBy === "Você") return { ...d, lockedBy: null };
-				return d;
-			}),
-		);
+		if (!/^\d+$/.test(id)) {
+			setDrivers((ds) =>
+				ds.map((d) => {
+					if (d.id === id)
+						return d.lockedBy && d.lockedBy !== "Você"
+							? d
+							: { ...d, lockedBy: "Você" };
+					if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+					return d;
+				}),
+			);
+			return;
+		}
+
+		void (async () => {
+			try {
+				const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${id}/contato`, {
+					method: "POST",
+				});
+				if (res.ok) {
+					setDrivers((ds) =>
+						ds.map((d) => {
+							if (d.id === id) return { ...d, lockedBy: "Você" };
+							if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+							return d;
+						}),
+					);
+				} else if (res.status === 409) {
+					const contato = (await res.json()) as ContatoMotoristaApi;
+					const holder = resolverLockedBy(contato, userEmail);
+					setDrivers((ds) =>
+						ds.map((d) => {
+							if (d.id === id) return { ...d, lockedBy: holder };
+							if (d.lockedBy === "Você") return { ...d, lockedBy: null };
+							return d;
+						}),
+					);
+				}
+			} catch (e) {
+				console.error("Falha ao registrar contato com motorista:", e);
+			}
+		})();
 	}
 
-	function closeDetail() {
+	const closeDetail = useCallback(() => {
+		const idAtual = selectedId;
+		if (idAtual && /^\d+$/.test(idAtual)) {
+			void apiFetch(`${MOTORISTA_URL}/api/motoristas/${idAtual}/contato`, {
+				method: "DELETE",
+			}).catch(() => null);
+		}
 		setDrivers((ds) =>
 			ds.map((d) =>
-				d.id === selectedId && d.lockedBy === "Você"
+				d.id === idAtual && d.lockedBy === "Você"
 					? { ...d, lockedBy: null }
 					: d,
 			),
 		);
 		setSelectedId(null);
-	}
+	}, [selectedId]);
 
-	// Grava o status no banco. Retorna true se deu certo.
+	// Renova o TTL do contato a cada 30s enquanto o detalhe estiver aberto para este usuário.
+	const isMeuLockAtual = selected?.lockedBy === "Você";
+	useEffect(() => {
+		if (!selectedId || !/^\d+$/.test(selectedId) || !isMeuLockAtual) return;
+		const heartbeat = window.setInterval(() => {
+			void (async () => {
+				try {
+					const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${selectedId}/contato`, {
+						method: "POST",
+					});
+					if (res.status === 409) {
+						const contato = (await res.json()) as ContatoMotoristaApi;
+						const holder = resolverLockedBy(contato, userEmail);
+						setDrivers((ds) =>
+							ds.map((d) => (d.id === selectedId ? { ...d, lockedBy: holder } : d)),
+						);
+					}
+				} catch {
+					// ignora falha transitória de heartbeat
+				}
+			})();
+		}, 30_000);
+		return () => window.clearInterval(heartbeat);
+	}, [selectedId, isMeuLockAtual, userEmail]);
+
+	// Libera qualquer contato ativo ao fechar a aba ou desmontar a tela.
+	useEffect(() => {
+		const liberarAoSair = () => {
+			void apiFetch(`${MOTORISTA_URL}/api/motoristas/contatos/meus`, {
+				method: "DELETE",
+				keepalive: true,
+			}).catch(() => null);
+		};
+		window.addEventListener("beforeunload", liberarAoSair);
+		return () => {
+			window.removeEventListener("beforeunload", liberarAoSair);
+			liberarAoSair();
+		};
+	}, []);
+
+	// Grava o status no banco. O manifesto só é enviado ao entrar em rota.
 	async function salvarStatus(
 		id: string,
 		status: DriverStatus,
-	): Promise<boolean> {
+		numeroManifesto?: number,
+	): Promise<ResultadoSalvarStatus> {
 		// Motoristas vindos da importação (ids "imp-...") ainda não existem no banco.
 		if (!/^\d+$/.test(id)) {
 			console.log("[salvarStatus] id não numérico, não grava no banco:", id);
-			return true;
+			return STATUS_SALVO;
 		}
 
 		try {
@@ -295,35 +466,39 @@ export function useDrivers(userName: string) {
 				body: JSON.stringify({
 					motoristaId: Number(id),
 					status: STATUS_API[status],
+					numeroManifesto,
 				}),
 			});
 			console.log("[salvarStatus] resposta", res.status);
-			if (!res.ok) throw new Error(await res.text());
-			return true;
+			if (!res.ok) return { ok: false, mensagem: await lerMensagemDeErro(res) };
+			return STATUS_SALVO;
 		} catch (e) {
 			console.error("Falha ao atualizar status:", e);
-			return false;
+			return { ok: false, mensagem: MENSAGEM_FALHA_AO_SALVAR_STATUS };
 		}
 	}
 
-	async function changeStatus(id: string, status: DriverStatus) {
-		const anterior = drivers.find((d) => d.id === id)?.status;
-		console.log("[changeStatus] chamado", { id, de: anterior, para: status });
+	async function changeStatus(
+		id: string,
+		status: DriverStatus,
+		numeroManifesto?: number,
+	): Promise<ResultadoSalvarStatus> {
+		const motoristaAnterior = drivers.find((d) => d.id === id);
+		console.log("[changeStatus] chamado", { id, de: motoristaAnterior?.status, para: status });
 		// O backend recusa (400) quando o status novo é igual ao atual de quem está Disponível.
-		if (anterior === status) return;
-		setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, status } : d)));
+		if (motoristaAnterior?.status === status) return STATUS_SALVO;
 
-		const ok = await salvarStatus(id, status);
-		if (!ok) {
-			if (anterior) {
-				setDrivers((ds) =>
-					ds.map((d) => (d.id === id ? { ...d, status: anterior } : d)),
-				);
-			}
-			window.alert(
-				"Não foi possível salvar o novo status. O servidor recusou a mudança ou está fora do ar.",
+		const manifestoAtual = status === "em_rota" ? numeroManifesto : undefined;
+		setDrivers((ds) => ds.map((d) => (d.id === id ? { ...d, status, manifestoAtual } : d)));
+
+		const resultado = await salvarStatus(id, status, numeroManifesto);
+		if (!resultado.ok && motoristaAnterior) {
+			const { status: statusAnterior, manifestoAtual: manifestoAnterior } = motoristaAnterior;
+			setDrivers((ds) =>
+				ds.map((d) => (d.id === id ? { ...d, status: statusAnterior, manifestoAtual: manifestoAnterior } : d)),
 			);
 		}
+		return resultado;
 	}
 
 	function concludeRoute(motoristaId: number, nota: number, feedback: string) {
@@ -333,8 +508,10 @@ export function useDrivers(userName: string) {
 					? {
 							...d,
 							status: "disponivel" as DriverStatus,
+							manifestoAtual: undefined,
+							manifestoData: TODAY,
 							avaliacoes: [
-								{ nota, obs: feedback, data: TODAY, operador: userName },
+								{ nota, obs: feedback, data: TODAY, operador: userName, manifesto: d.manifestoAtual },
 								...d.avaliacoes,
 							],
 						}
@@ -357,7 +534,7 @@ export function useDrivers(userName: string) {
 			setError("Nota deve ser de 1 a 5");
 			return false;
 		}
-		if (!Number.isInteger(avaliacao.numeroManifesto) || avaliacao.numeroManifesto <= 0) {
+		if (!ehNumeroManifestoValido(avaliacao.numeroManifesto)) {
 			setError("Número do manifesto inválido");
 			return false;
 		}
@@ -392,11 +569,11 @@ export function useDrivers(userName: string) {
 			const atual = drivers.find(
 				(d) => d.id === String(avaliacao.motoristaId),
 			)?.status;
-			const statusOk =
+			const statusSalvo =
 				atual === "disponivel"
-					? true
+					? STATUS_SALVO
 					: await salvarStatus(String(avaliacao.motoristaId), "disponivel");
-			if (!statusOk) {
+			if (!statusSalvo.ok) {
 				window.alert(
 					"A avaliação foi registrada, mas não foi possível atualizar o status do motorista no servidor.",
 				);
@@ -426,6 +603,53 @@ export function useDrivers(userName: string) {
 		setSelectedId(null);
 	}
 
+	const atualizarTelefone = useCallback(
+		async (id: string, payload: AtualizarContatoPayload): Promise<ResultadoSalvarStatus> => {
+			const limpo = payload.contatoMotorista.trim();
+			const secundarioLimpo = payload.contatoSecundario?.trim() || "";
+			if (!limpo) return { ok: false, mensagem: "Informe o contato principal." };
+			if (limpo.length > 20 || secundarioLimpo.length > 20) {
+				return { ok: false, mensagem: "Cada contato deve ter no máximo 20 caracteres." };
+			}
+
+			const body = {
+				contatoMotorista: limpo,
+				tipoContato: payload.tipoContato ?? null,
+				contatoSecundario: secundarioLimpo || null,
+				tipoContatoSecundario: secundarioLimpo ? (payload.tipoContatoSecundario ?? null) : null,
+			};
+
+			const aplicarLocal = (d: Driver): Driver => ({
+				...d,
+				telefone: limpo,
+				tipoContato: payload.tipoContato,
+				telefoneSecundario: secundarioLimpo || undefined,
+				tipoContatoSecundario: secundarioLimpo ? payload.tipoContatoSecundario : undefined,
+			});
+
+			if (!/^\d+$/.test(id)) {
+				setDrivers((ds) => ds.map((d) => (d.id === id ? aplicarLocal(d) : d)));
+				return STATUS_SALVO;
+			}
+
+			try {
+				const res = await apiFetch(`${MOTORISTA_URL}/api/motoristas/${id}/telefone`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(body),
+				});
+				if (!res.ok) {
+					return { ok: false, mensagem: await lerMensagemDeErro(res) };
+				}
+				setDrivers((ds) => ds.map((d) => (d.id === id ? aplicarLocal(d) : d)));
+				return STATUS_SALVO;
+			} catch {
+				return { ok: false, mensagem: "Não foi possível salvar os contatos do motorista." };
+			}
+		},
+		[],
+	);
+
 	return {
 		drivers,
 		sortedDrivers,
@@ -434,6 +658,7 @@ export function useDrivers(userName: string) {
 		select,
 		closeDetail,
 		changeStatus,
+		atualizarTelefone,
 		concludeRoute,
 		reset,
 		importar,
@@ -442,6 +667,7 @@ export function useDrivers(userName: string) {
 		sendAvaliacao,
 		error,
 		loading,
+		loadFailed,
 		reload: loadFromApi,
 	};
 }
