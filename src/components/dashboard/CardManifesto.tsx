@@ -14,11 +14,26 @@ export default function CardManifesto({ tipo, dados, carregando, erro }: Props) 
 
   return (
     <section className={`cc-card cc-manifesto ${melhor ? "melhor" : "pior"}`}>
-      <h3>{melhor ? "MELHOR MANIFESTO DO MÊS" : "PIOR MANIFESTO DO MÊS"}</h3>
-      <small>
-        {melhor ? "Maior rentabilidade total do manifesto" : "Menor rentabilidade total do manifesto"}
-        {dados?.mes ? ` · ${mesExtenso(dados.mes)}` : ""}
-      </small>
+      <div className="cc-card-top">
+        <div className={`cc-card-icon ${melhor ? "melhor" : "pior"}`} aria-hidden>
+          {melhor ? (
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21l2.3-7-6-4.6h7.6L12 2z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            </svg>
+          )}
+        </div>
+        <div className="cc-card-titles">
+          <h3>{melhor ? "Melhor manifesto" : "Pior manifesto"}</h3>
+          <small>
+            {melhor ? "Maior rentabilidade total" : "Menor rentabilidade total"}
+            {dados?.mes ? ` · ${mesExtenso(dados.mes)}` : ""}
+          </small>
+        </div>
+      </div>
 
       {erro && <p className="cc-erro">{erro}</p>}
       {carregando && <p className="cc-msg">Carregando…</p>}
@@ -28,28 +43,26 @@ export default function CardManifesto({ tipo, dados, carregando, erro }: Props) 
 
       {!carregando && !erro && m && (
         <>
-          <p className="cc-num">
-            Manifesto
-            {" "}
-            {m.numero}
-          </p>
-          <strong className={`cc-rt ${m.rt < 0 ? "ruim" : "bom"}`}>{brlComSinal(m.rt)}</strong>
-          <ul>
+          <div className="cc-manifesto-hero">
+            <span className="cc-num-badge">#{m.numero}</span>
+            <strong className={`cc-rt ${m.rt < 0 ? "ruim" : "bom"}`}>{brlComSinal(m.rt)}</strong>
+          </div>
+
+          <ul className="cc-manifesto-meta">
             <li>
-              <b>Data:</b>
-              {" "}
-              {dataBr(m.data)}
+              <span>Data</span>
+              <b>{dataBr(m.data)}</b>
             </li>
             <li>
-              <b>Destino:</b>
-              {" "}
-              {m.destino ?? "—"}
+              <span>Destino</span>
+              <b>{m.destino ?? "—"}</b>
             </li>
             <li>
-              <b>Motorista:</b>
-              {" "}
-              {m.motorista ?? "—"}
-              {m.tipoVeiculo ? ` · ${m.tipoVeiculo}` : ""}
+              <span>Motorista</span>
+              <b>
+                {m.motorista ?? "—"}
+                {m.tipoVeiculo ? ` · ${m.tipoVeiculo}` : ""}
+              </b>
             </li>
           </ul>
         </>

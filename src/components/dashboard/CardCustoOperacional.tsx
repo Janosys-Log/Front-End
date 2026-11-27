@@ -22,8 +22,17 @@ export default function CardCustoOperacional({ dados, carregando, erro }: Props)
 
   return (
     <section className="cc-card cc-custo">
-      <h3>CUSTO OPERACIONAL DO MÊS</h3>
-      {dados?.mes && <small>{mesExtenso(dados.mes)} · todos os destinos</small>}
+      <div className="cc-card-top">
+        <div className="cc-card-icon custo" aria-hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+        </div>
+        <div className="cc-card-titles">
+          <h3>Custo operacional do mês</h3>
+          {dados?.mes && <small>{mesExtenso(dados.mes)} · todos os destinos</small>}
+        </div>
+      </div>
 
       {erro && <p className="cc-erro">{erro}</p>}
       {carregando && <p className="cc-msg">Carregando…</p>}
@@ -41,17 +50,19 @@ export default function CardCustoOperacional({ dados, carregando, erro }: Props)
             {c.totalMesAnterior !== null ? `Mês anterior: ${brl(c.totalMesAnterior)}` : "Mês anterior: —"}
           </p>
 
-          <div className="cc-linha">
-            <span>Custo médio por manifesto</span>
-            <b>
-              {c.custoMedio !== null ? brl(c.custoMedio) : "—"}
-              {" "}
-              <Variacao valor={c.variacaoCustoMedioPercentual} />
-            </b>
-          </div>
-          <div className="cc-linha">
-            <span>Manifestos no mês</span>
-            <b>{c.numeroManifestos.toLocaleString("pt-BR")}</b>
+          <div className="cc-metrics">
+            <div className="cc-metric">
+              <span className="cc-metric-label">Custo médio / manifesto</span>
+              <span className="cc-metric-value">
+                {c.custoMedio !== null ? brl(c.custoMedio) : "—"}
+                {" "}
+                <Variacao valor={c.variacaoCustoMedioPercentual} />
+              </span>
+            </div>
+            <div className="cc-metric">
+              <span className="cc-metric-label">Manifestos no mês</span>
+              <span className="cc-metric-value">{c.numeroManifestos.toLocaleString("pt-BR")}</span>
+            </div>
           </div>
 
           <p className="cc-aviso">

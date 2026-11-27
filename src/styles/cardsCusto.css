@@ -1,153 +1,448 @@
+/* cards de custo operacional — redesign visual */
+
 .cc-grupo {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 14px;
-  max-width: 560px;
+  gap: 16px;
+  width: 100%;
+  animation: cc-in 0.4s ease 0.12s both;
 }
+
 .cc-periodo-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 0;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 14px;
+  background: var(--panel, #1b2025);
+  border: 1px solid var(--border, #2c3238);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
+
 .cc-periodo-label {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #1e3a8a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #8a9099);
 }
+
 .cc-periodo-controls {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
+
 .cc-periodo-select {
   appearance: none;
-  background-color: #5b8fd6;
+  background-color: var(--accent, #ff6b35);
   color: #fff;
-  border: 1px solid #1f4e9c;
-  border-radius: 6px;
-  padding: 6px 28px 6px 14px;
-  font-size: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--accent, #ff6b35) 70%, #000);
+  border-radius: 10px;
+  padding: 7px 30px 7px 14px;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 9px auto;
-  transition: background-color 0.15s ease;
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
+
 .cc-periodo-select:hover {
-  background-color: #4a7ec5;
+  filter: brightness(1.08);
 }
+
 .cc-periodo-select:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
+
+/* os cards crescem juntos pra preencher a altura disponível */
+.cc-grid {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cc-grid > .cc-card,
+.cc-par {
+  flex: 1 1 auto;
+}
+
 .cc-par {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 16px;
 }
+
+/* ——— Card base ——— */
 .cc-card {
-  background: var(--panel, #fff);
-  border: 1px solid var(--border, #d9dee7);
-  border-radius: 12px;
-  padding: 14px 16px;
-  color: var(--text, #1f2937);
+  position: relative;
+  background: var(--panel, #1b2025);
+  border: 1px solid var(--border, #2c3238);
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  color: var(--text, #edeff1);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  overflow: hidden;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.2s ease;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 6px 20px rgba(0, 0, 0, 0.14);
 }
+
+.cc-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  opacity: 0.95;
+}
+
+.cc-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+/* Accent bars */
+.cc-custo::before {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+  background-size: 200% 100%;
+}
+
+.cc-manifesto.melhor::before {
+  background: linear-gradient(90deg, #16a34a, #4ade80, #16a34a);
+  background-size: 200% 100%;
+}
+
+.cc-manifesto.pior::before {
+  background: linear-gradient(90deg, #dc2626, #f87171, #dc2626);
+  background-size: 200% 100%;
+}
+
+.cc-custo {
+  border-color: color-mix(in srgb, #3b82f6 40%, var(--border));
+}
+
+.cc-manifesto.melhor {
+  border-color: color-mix(in srgb, #16a34a 40%, var(--border));
+}
+
+.cc-manifesto.pior {
+  border-color: color-mix(in srgb, #dc2626 40%, var(--border));
+}
+
+/* Header row: icon + titles */
+.cc-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cc-card-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-card-icon.custo {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.cc-card-icon.melhor {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+}
+
+.cc-card-icon.pior {
+  background: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+}
+
+.cc-card-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .cc-card h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text, #edeff1);
 }
+
 .cc-card small {
-  font-size: 11px;
-  color: var(--muted, #6b7280);
+  font-size: 0.72rem;
+  color: var(--muted, #8a9099);
+  line-height: 1.3;
 }
-.cc-custo {
-  border-color: #264dea;
-}
+
+/* Custo operacional — total */
 .cc-total {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 10px;
+  margin-top: 2px;
 }
+
 .cc-total strong {
-  font-size: 24px;
+  font-size: clamp(1.35rem, 2.8vw, 1.65rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--text, #edeff1);
 }
+
 .cc-ant {
   margin: 0;
-  font-size: 12px;
-  color: var(--muted, #6b7280);
+  font-size: 0.78rem;
+  color: var(--muted, #8a9099);
 }
-.cc-linha {
+
+/* Metric chips */
+.cc-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cc-metric {
+  background: var(--panel-2, #21262c);
+  border: 1px solid var(--border, #2c3238);
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
-  justify-content: space-between;
-  font-size: 12.5px;
-  border-top: 1px solid var(--border, #d9dee7);
-  padding-top: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
-.cc-var {
-  font-size: 12px;
+
+.cc-metric-label {
+  font-size: 0.68rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted, #8a9099);
 }
+
+.cc-metric-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #edeff1);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cc-var {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .cc-var.ruim,
 .cc-rt.ruim {
   color: #e5484d;
 }
+
 .cc-var.bom,
 .cc-rt.bom {
   color: #2fbf71;
 }
+
 .cc-var.neutra {
-  color: var(--muted, #6b7280);
+  color: var(--muted, #8a9099);
 }
+
 .cc-aviso {
-  margin: 4px 0 0;
-  font-size: 11px;
-  padding: 6px 8px;
+  margin: 2px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(240, 169, 58, 0.16);
+  background: rgba(240, 169, 58, 0.12);
+  color: #d4a017;
+  border: 1px solid rgba(240, 169, 58, 0.2);
+}
+
+.shell.theme-light .cc-aviso {
   color: #8a5a00;
+  background: rgba(240, 169, 58, 0.14);
 }
-.cc-manifesto.melhor {
-  border-color: #2fbf71;
+
+/* Manifesto cards */
+.cc-manifesto-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0 2px;
 }
-.cc-manifesto.pior {
-  border-color: #e5484d;
+
+.cc-num-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--panel-2, #21262c);
+  border: 1px solid var(--border, #2c3238);
+  color: var(--text, #edeff1);
 }
-.cc-num {
-  margin: 0;
-  font-weight: 600;
-  font-size: 13px;
+
+.cc-manifesto.melhor .cc-num-badge {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(22, 163, 74, 0.35);
+  color: #4ade80;
 }
+
+.cc-manifesto.pior .cc-num-badge {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #f87171;
+}
+
 .cc-rt {
-  font-size: 22px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
-.cc-manifesto ul {
+
+.cc-manifesto-meta {
   list-style: none;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 0;
-  font-size: 12px;
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+
+.cc-manifesto-meta li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.78rem;
+  padding-top: 6px;
+  border-top: 1px solid var(--border, #2c3238);
+}
+
+.cc-manifesto-meta li span {
+  color: var(--muted, #8a9099);
+  flex-shrink: 0;
+}
+
+.cc-manifesto-meta li b {
+  font-weight: 600;
+  text-align: right;
+  color: var(--text, #edeff1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 65%;
+}
+
 .cc-msg {
   margin: 0;
-  font-size: 12px;
-  color: var(--muted, #6b7280);
+  font-size: 0.8rem;
+  color: var(--muted, #8a9099);
 }
+
 .cc-erro {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.8rem;
   color: #e5484d;
 }
+
+/* Tema claro */
+.shell.theme-light .cc-card {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.shell.theme-light .cc-card:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 12px 26px rgba(0, 0, 0, 0.1);
+}
+
+.shell.theme-light .cc-card-icon.custo {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.shell.theme-light .cc-card-icon.melhor {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.shell.theme-light .cc-card-icon.pior {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.shell.theme-light .cc-periodo-bar {
+  background: var(--panel);
+}
+
 @media (max-width: 700px) {
   .cc-par {
     grid-template-columns: 1fr;
+  }
+
+  .cc-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .cc-periodo-controls {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@keyframes cc-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-grupo,
+  .cc-card {
+    animation: none;
+    transition: none;
   }
 }

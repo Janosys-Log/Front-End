@@ -82,28 +82,38 @@ export async function buscarRanking(
  * GERAL     -> GET /api/manifestos/rentabilidadeGeral/{inicio}/{fim}
  * GRANDE_SP -> GET /api/manifestos/rentabilidadeGeralGrandeSp/{inicio}/{fim}
  * Retorna HashMap<mes, RentabilidadeDTO>.
+ *
+ * Por padrão: 6 meses para trás + mês selecionado + 6 meses para frente (13 pontos).
  */
 export async function buscarSerieMensal(
   ano: number,
   mes: number,
   regiao: Regiao,
-  qtdMeses = 12
+  mesesAtras = 6,
+  mesesFrente = 6,
 ): Promise<PontoMensal[]> {
   const meses: { mes: number; ano: number }[] = [];
-  for (let i = qtdMeses - 1; i >= 0; i--) {
-    const d = new Date(ano, mes - 1 - i, 1);
+  for (let i = -mesesAtras; i <= mesesFrente; i++) {
+    const d = new Date(ano, mes - 1 + i, 1);
     meses.push({ mes: d.getMonth() + 1, ano: d.getFullYear() });
   }
-  const inicio = iso(meses[0].ano, meses[0].mes, 1);
-  const fim = iso(ano, mes, ultimoDiaDoMes(ano, mes));
+  const primeiro = meses[0];
+  const ultimo = meses[meses.length - 1];
+  const inicio = iso(primeiro.ano, primeiro.mes, 1);
+  const fim = iso(ultimo.ano, ultimo.mes, ultimoDiaDoMes(ultimo.ano, ultimo.mes));
   const rota = regiao === "GRANDE_SP" ? "rentabilidadeGeralGrandeSp" : "rentabilidadeGeral";
 
   const mapa = await get<Record<string, RentabilidadeApi>>(
-    `/api/manifestos/${rota}/${inicio}/${fim}`
+    `/api/manifestos/${rota}/${inicio}/${fim}`,
   );
 
   return meses.map(({ mes: m, ano: a }) => {
-    const d = mapa[String(m)];
+    // A API retorna mapa indexado pelo número do mês; pode haver colisão se o intervalo
+    // atravessar anos. Preferimos match por mes+ano quando o DTO trouxer o ano.
+    const candidatos = Object.values(mapa).filter(
+      (d) => d && Number(d.mes) === m && (d.ano == null || Number(d.ano) === a),
+    );
+    const d = candidatos[0] ?? mapa[String(m)];
     return {
       mes: m,
       ano: a,

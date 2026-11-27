@@ -1,46 +1,100 @@
 /* src/styles/dashboardPage.css */
+
 .dash-page {
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2.5vw, 28px);
   box-sizing: border-box;
+  animation: dash-page-in 0.4s ease both;
 }
 
-.dash-header {
-  margin-bottom: 20px;
-}
-
-.dash-header h1 {
-  margin: 0;
-  font-size: 1.6rem;
-}
-
+/* flex: 1 faz o grid ocupar toda a altura da página (sem vazio embaixo) */
 .dash-grid {
+  flex: 1 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(540px, 680px); /* conteúdo | card à direita ampliado */
-  gap: 28px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 640px);
+  gap: clamp(18px, 2.5vw, 28px);
+  align-items: stretch;
 }
 
 .dash-main {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* painéis e cards crescem juntos e dividem a altura que sobrar */
+.dash-main > .cc-grupo {
+  flex: 1 1 auto;
+}
+
+.dash-main > .flex {
+  flex: 1 1 auto;
+  animation: dash-fade-up 0.4s ease 0.05s both;
 }
 
 .dash-side {
   min-width: 0;
-  position: sticky;
-  top: 24px; /* o card acompanha a rolagem */
+  display: flex;
+  flex-direction: column;
+  animation: dash-fade-up 0.45s ease 0.08s both;
 }
 
-/* Telas menores: o card desce para baixo do conteúdo */
-@media (max-width: 1100px) {
+/* Telas médias: coluna única, card abaixo */
+@media (max-width: 1180px) {
   .dash-grid {
     grid-template-columns: 1fr;
   }
 
   .dash-side {
-    position: static;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .dash-page {
+    padding: 14px 12px;
+  }
+
+  .dash-main > .flex {
+    flex-direction: column;
+  }
+
+  .dash-main > .flex > * {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@keyframes dash-page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dash-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-page,
+  .dash-main > .flex,
+  .dash-side {
+    animation: none;
   }
 }

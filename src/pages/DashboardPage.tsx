@@ -30,14 +30,10 @@ export default function DashboardPage({ onOpenRanking }: Props) {
 
   return (
     <main className="dash-page">
-      <header className="dash-header">
-        <h1>Dashboard</h1>
-      </header>
-
       <div className="dash-grid">
         {/* Coluna esquerda: motoristas + módulo de custo operacional */}
         <section className="dash-main">
-          <div className="flex flex-wrap gap-3 w-full">
+          <div className="flex flex-wrap gap-4 w-full">
             <MotoristasEmRota />
             {session.role === "gerente" && (
               <MotoristasIndesejados />
