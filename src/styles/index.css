@@ -12,5 +12,9 @@
 @import "./driverList.css";
 @import "./driverDetail.css";
 @import "./dashboard.css";
+@import "./dashboardPage.css";
+@import "./dashboardPanels.css";
+@import "./cardRent.css";
+@import "./cardsCusto.css";
 @import "./rankingModal.css";
 @import "./rankingNegativos.css";

@@ -142,7 +142,7 @@ export default function RentabilidadeMediaCard({
         ))}
       </div>
 
-      <Grafico serie={serie} />
+      <Grafico serie={serie} mesSelecionado={mes} anoSelecionado={ano} />
 
       {regiao === "GRANDE_SP" && (
         <p className="rm-cidades">
@@ -178,15 +178,23 @@ function MelhorItem({ m, pos }: { m: MotoristaRanking; pos: number }) {
   );
 }
 
-function Grafico({ serie }: { serie: PontoMensal[] }) {
-  const W = 540;
-  const H = 140;
-  const PAD_X = 28;
-  const PAD_Y = 24;
+function Grafico({
+  serie,
+  mesSelecionado,
+  anoSelecionado,
+}: {
+  serie: PontoMensal[];
+  mesSelecionado: number;
+  anoSelecionado: number | null;
+}) {
+  const W = 560;
+  const H = 150;
+  const PAD_X = 30;
+  const PAD_Y = 26;
 
-  const { pontos, media, min } = useMemo(() => {
+  const { pontos, media, min, max } = useMemo(() => {
     if (!serie.length)
-      return { pontos: [], media: 0, min: 0 };
+      return { pontos: [] as Array<PontoMensal & { x: number; y: number; isAtual: boolean }>, media: 0, min: 0, max: 0 };
     const valores = serie.map(s => s.rentabilidadeMedia);
     const mn = Math.min(...valores);
     const mx = Math.max(...valores);
@@ -196,47 +204,72 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
     const y = (v: number) => PAD_Y + (1 - (v - mn) / range) * (H - PAD_Y * 2);
     const m = valores.reduce((a, b) => a + b, 0) / valores.length;
     return {
-      pontos: serie.map((s, i) => ({ ...s, x: x(i), y: y(s.rentabilidadeMedia) })),
+      pontos: serie.map((s, i) => ({
+        ...s,
+        x: x(i),
+        y: y(s.rentabilidadeMedia),
+        isAtual: s.mes === mesSelecionado && s.ano === anoSelecionado,
+      })),
       media: m,
       min: mn,
-      yMedia: y(m),
+      max: mx,
     };
-  }, [serie]);
+  }, [serie, mesSelecionado, anoSelecionado]);
 
   if (!pontos.length)
     return null;
+
   const yMedia
     = PAD_Y
-      + (1
-        - (media - min)
-        / ((Math.max(...serie.map(s => s.rentabilidadeMedia)) - min) || 1))
-      * (H - PAD_Y * 2);
+      + (1 - (media - min) / ((max - min) || 1)) * (H - PAD_Y * 2);
 
   const formatoValorPonto = (val: number) => {
-    if (serie.length > 6) {
+    if (serie.length > 8)
       return num(Math.round(val));
-    }
-    return num(Number(val.toFixed(2))).replace(/^(\d+)$/, "$1,00");
+    return num(Number(val.toFixed(0)));
   };
 
   const formatoManifestos = (qtd: number) => {
     if (qtd <= 0) return "—";
-    if (serie.length > 6 && qtd >= 1000) {
-      return `${(qtd / 1000).toFixed(1)}k`;
-    }
+    if (qtd >= 1000) return `${(qtd / 1000).toFixed(1)}k`;
     return num(qtd);
   };
+
+  // Área sob a curva (gradiente suave)
+  const areaPath = pontos.length
+    ? `M ${pontos[0].x},${H - 4} L ${pontos.map(p => `${p.x},${p.y}`).join(" L ")} L ${pontos[pontos.length - 1].x},${H - 4} Z`
+    : "";
 
   return (
     <div className="rm-grafico">
       <div className="rm-grafico-head">
-        <b>Média da frota nos últimos 12 meses (R$ por manifesto)</b>
+        <b>Média da frota · 6 meses atrás e 6 à frente (R$ / manifesto)</b>
         <span>manif. = emitidos</span>
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Média da frota por mês nos últimos 12 meses">
-        <line x1={PAD_X - 14} x2={W - PAD_X + 14} y1={yMedia} y2={yMedia} className="rm-media-linha" />
-        <text x={W - 4} y={yMedia - 3} textAnchor="end" className="rm-media-txt">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width="100%"
+        role="img"
+        aria-label="Média da frota por mês: 6 meses anteriores e 6 posteriores ao selecionado"
+      >
+        <defs>
+          <linearGradient id="rmAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--rm-accent, #1f4e9c)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--rm-accent, #1f4e9c)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+
+        <path d={areaPath} fill="url(#rmAreaGrad)" className="rm-area" />
+
+        <line
+          x1={PAD_X - 10}
+          x2={W - PAD_X + 10}
+          y1={yMedia}
+          y2={yMedia}
+          className="rm-media-linha"
+        />
+        <text x={W - 6} y={yMedia - 4} textAnchor="end" className="rm-media-txt">
           {brl(media)}
         </text>
 
@@ -245,13 +278,30 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
           className="rm-linha-graf"
           points={pontos.map(p => `${p.x},${p.y}`).join(" ")}
         />
+
         {pontos.map((p) => {
-          const abaixo = p.rentabilidadeMedia === min;
+          const abaixo = p.rentabilidadeMedia === min && min !== max;
           return (
-            <g key={`${p.ano}-${p.mes}`}>
-              <title>{`${p.label}/${p.ano}: ${brl(p.rentabilidadeMedia)} (${num(p.manifestos)} manifestos)`}</title>
-              <circle cx={p.x} cy={p.y} r={serie.length > 6 ? 3.5 : 5} className="rm-ponto" />
-              <text x={p.x} y={abaixo ? p.y + 14 : p.y - 8} textAnchor="middle" className="rm-ponto-txt">
+            <g key={`${p.ano}-${p.mes}`} className={p.isAtual ? "rm-ponto-atual" : undefined}>
+              <title>
+                {`${p.label}/${p.ano}: ${brl(p.rentabilidadeMedia)} (${num(p.manifestos)} manifestos)`}
+                {p.isAtual ? " · mês selecionado" : ""}
+              </title>
+              {p.isAtual && (
+                <circle cx={p.x} cy={p.y} r="9" className="rm-ponto-halo" />
+              )}
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={p.isAtual ? 5.5 : serie.length > 8 ? 3.2 : 4.5}
+                className={`rm-ponto${p.isAtual ? " atual" : ""}`}
+              />
+              <text
+                x={p.x}
+                y={abaixo ? p.y + 15 : p.y - 9}
+                textAnchor="middle"
+                className={`rm-ponto-txt${p.isAtual ? " atual" : ""}`}
+              >
                 {formatoValorPonto(p.rentabilidadeMedia)}
               </text>
             </g>
@@ -260,12 +310,19 @@ function Grafico({ serie }: { serie: PontoMensal[] }) {
       </svg>
 
       <div className="rm-meses">
-        {serie.map(s => (
-          <div key={`${s.ano}-${s.mes}`} title={`${s.label}/${s.ano}: ${num(s.manifestos)} manifestos`}>
-            <b>{s.label}</b>
-            <span>{formatoManifestos(s.manifestos)}</span>
-          </div>
-        ))}
+        {serie.map(s => {
+          const isAtual = s.mes === mesSelecionado && s.ano === anoSelecionado;
+          return (
+            <div
+              key={`${s.ano}-${s.mes}`}
+              className={isAtual ? "atual" : undefined}
+              title={`${s.label}/${s.ano}: ${num(s.manifestos)} manifestos`}
+            >
+              <b>{s.label}</b>
+              <span>{formatoManifestos(s.manifestos)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

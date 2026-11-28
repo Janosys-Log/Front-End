@@ -67,7 +67,7 @@ export default function CardsCustoGrupo({ mes, mesNum, ano, onMudarPeriodo }: Pr
   return (
     <div className="cc-grupo">
       <div className="cc-periodo-bar">
-        <span className="cc-periodo-label">Mês dos cards:</span>
+        <span className="cc-periodo-label">Período dos cards</span>
         <div className="cc-periodo-controls">
           <select
             className="cc-periodo-select"
@@ -96,10 +96,12 @@ export default function CardsCustoGrupo({ mes, mesNum, ano, onMudarPeriodo }: Pr
         </div>
       </div>
 
-      <CardCustoOperacional dados={dados} carregando={carregando} erro={erro} />
-      <div className="cc-par">
-        <CardManifesto tipo="melhor" dados={dados} carregando={carregando} erro={erro} />
-        <CardManifesto tipo="pior" dados={dados} carregando={carregando} erro={erro} />
+      <div className="cc-grid">
+        <CardCustoOperacional dados={dados} carregando={carregando} erro={erro} />
+        <div className="cc-par">
+          <CardManifesto tipo="melhor" dados={dados} carregando={carregando} erro={erro} />
+          <CardManifesto tipo="pior" dados={dados} carregando={carregando} erro={erro} />
+        </div>
       </div>
     </div>
   );
